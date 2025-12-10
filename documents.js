@@ -445,8 +445,260 @@ class DocumentManager {
     }
 
     async generatePDF(id) {
-        alert(`生成 PDF ${id} 功能開發中...`);
-        // TODO: 整合 PDF 生成
+        try {
+            // 載入單據完整資訊
+            const doc = await db.getDocument(id);
+            if (!doc) {
+                alert('找不到單據資料');
+                return;
+            }
+
+            // 載入關聯的客戶或供應商資訊
+            let contact = null;
+            if (doc.customer_id) {
+                contact = await db.getCustomer(doc.customer_id);
+            } else if (doc.supplier_id) {
+                contact = await db.getSupplier(doc.supplier_id);
+            }
+
+            // 解析項目明細
+            let items = [];
+            try {
+                items = typeof doc.items === 'string' ? JSON.parse(doc.items) : doc.items;
+            } catch (e) {
+                console.error('解析項目明細失敗:', e);
+                items = [];
+            }
+
+            // 生成 PDF
+            await this.createPDF(doc, contact, items);
+            
+        } catch (error) {
+            console.error('生成PDF失敗:', error);
+            alert('生成PDF失敗：' + error.message);
+        }
+    }
+
+    async createPDF(doc, contact, items) {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        
+        try {
+            // 載入中文字體
+            console.log('正在載入字體...');
+            const fontLoaded = await this.loadFont(pdf);
+            if (!fontLoaded) {
+                throw new Error('字體載入失敗');
+            }
+            
+            // 設定字體
+            pdf.setFont("NotoSans", "normal");
+            
+            // 繪製 PDF 內容
+            this.drawPDFContent(pdf, doc, contact, items);
+            
+            // 下載檔案
+            const fileName = `${doc.doc_number}.pdf`;
+            pdf.save(fileName);
+            
+            console.log('✅ PDF 生成成功！');
+            
+        } catch (error) {
+            console.error('❌ PDF 生成失敗:', error);
+            throw error;
+        }
+    }
+
+    async loadFont(pdf) {
+        try {
+            // 嘗試從 Supabase 載入字體
+            console.log('從 Supabase 載入字體...');
+            let response = await fetch(`${window.supabaseConfig.url}/storage/v1/object/public/fonts/NotoSansSC-Regular.ttf`);
+            
+            // 如果失敗，嘗試本地字體
+            if (!response.ok) {
+                console.log('Supabase 失敗，嘗試本地字體...');
+                response = await fetch('./NotoSansSC-Regular.ttf');
+            }
+            
+            if (!response.ok) {
+                throw new Error('無法載入字體檔案');
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            
+            // 轉換為 Base64
+            const fontBase64 = btoa(
+                new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+            
+            // 新增字體到 PDF
+            pdf.addFileToVFS("NotoSansSC.ttf", fontBase64);
+            pdf.addFont("NotoSansSC.ttf", "NotoSans", "normal");
+            
+            console.log('✅ 字體載入成功');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ 字體載入失敗:', error);
+            alert('字體載入失敗，PDF 可能無法正確顯示中文');
+            return false;
+        }
+    }
+
+    drawPDFContent(pdf, doc, contact, items) {
+        const pageWidth = 210; // A4 寬度 mm
+        const margin = 20;
+        let y = 20;
+
+        // ==================== 標題 ====================
+        pdf.setFontSize(24);
+        const title = this.getTypeName(doc.type);
+        pdf.text(title, pageWidth / 2, y, { align: 'center' });
+        
+        y += 15;
+        
+        // ==================== 單據編號和日期 ====================
+        pdf.setFontSize(10);
+        
+        // 左側：單據編號
+        pdf.text(`單據編號: ${doc.doc_number}`, margin, y);
+        
+        // 右側：日期
+        pdf.text(`日期: ${this.formatDate(doc.doc_date)}`, pageWidth - margin - 60, y);
+        y += 7;
+        
+        // 到期日（如果有）
+        if (doc.due_date) {
+            pdf.text(`到期日: ${this.formatDate(doc.due_date)}`, pageWidth - margin - 60, y);
+            y += 7;
+        }
+        
+        y += 5;
+        
+        // ==================== 分隔線 ====================
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 10;
+        
+        // ==================== 客戶/供應商資訊 ====================
+        pdf.setFontSize(12);
+        pdf.text(doc.type === 'purchase_order' ? '供應商資訊' : '客戶資訊', margin, y);
+        y += 7;
+        
+        pdf.setFontSize(10);
+        
+        if (contact) {
+            pdf.text(`名稱: ${contact.name || ''}`, margin, y);
+            y += 6;
+            
+            if (contact.phone) {
+                pdf.text(`電話: ${contact.phone}`, margin, y);
+                y += 6;
+            }
+            
+            if (contact.email) {
+                pdf.text(`電郵: ${contact.email}`, margin, y);
+                y += 6;
+            }
+            
+            if (contact.address) {
+                pdf.text(`地址: ${contact.address}`, margin, y);
+                y += 6;
+            }
+        } else {
+            pdf.text('未提供聯絡資訊', margin, y);
+            y += 6;
+        }
+        
+        y += 5;
+        
+        // ==================== 項目明細表格 ====================
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 7;
+        
+        // 表頭
+        pdf.setFontSize(10);
+        
+        const colX = {
+            name: margin + 5,
+            quantity: margin + 90,
+            price: margin + 120,
+            amount: margin + 150
+        };
+        
+        pdf.text('項目名稱', colX.name, y);
+        pdf.text('數量', colX.quantity, y);
+        pdf.text('單價', colX.price, y);
+        pdf.text('金額', colX.amount, y);
+        
+        y += 5;
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 7;
+        
+        // 項目列表
+        let subtotal = 0;
+        
+        items.forEach((item, index) => {
+            const itemAmount = (item.quantity || 0) * (item.price || 0);
+            subtotal += itemAmount;
+            
+            // 檢查是否需要換頁
+            if (y > 250) {
+                pdf.addPage();
+                y = 20;
+            }
+            
+            pdf.text(item.name || '', colX.name, y);
+            pdf.text(String(item.quantity || 0), colX.quantity, y);
+            pdf.text(`HK$${this.formatNumber(item.price || 0)}`, colX.price, y);
+            pdf.text(`HK$${this.formatNumber(itemAmount)}`, colX.amount, y);
+            
+            y += 7;
+        });
+        
+        y += 3;
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 7;
+        
+        // ==================== 總計 ====================
+        pdf.setFontSize(11);
+        
+        // 小計
+        pdf.text('小計:', margin + 120, y);
+        pdf.text(`HK$${this.formatNumber(subtotal)}`, colX.amount, y);
+        y += 7;
+        
+        // 稅額（如果有）
+        if (doc.tax && doc.tax > 0) {
+            pdf.text('稅額:', margin + 120, y);
+            pdf.text(`HK$${this.formatNumber(doc.tax)}`, colX.amount, y);
+            y += 7;
+        }
+        
+        // 總計
+        pdf.setFontSize(12);
+        const total = subtotal + (doc.tax || 0);
+        pdf.text('總計:', margin + 120, y);
+        pdf.text(`HK$${this.formatNumber(total)}`, colX.amount, y);
+        
+        y += 10;
+        
+        // ==================== 備註 ====================
+        if (doc.notes) {
+            y += 5;
+            pdf.setFontSize(10);
+            pdf.text('備註:', margin, y);
+            y += 6;
+            
+            const noteLines = pdf.splitTextToSize(doc.notes, pageWidth - margin * 2);
+            pdf.text(noteLines, margin, y);
+        }
+        
+        // ==================== 頁尾 ====================
+        pdf.setFontSize(8);
+        pdf.text('本單據由記帳系統自動生成', pageWidth / 2, 285, { align: 'center' });
     }
 
     async deleteDocument(id) {
