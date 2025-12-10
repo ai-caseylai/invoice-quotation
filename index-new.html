@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡易記帳系統</title>
+    <link rel="stylesheet" href="style-new.css">
+</head>
+<body>
+    <!-- 側邊導航欄 -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>📊 記帳系統</h1>
+            <p class="version">v2.0</p>
+        </div>
+        
+        <ul class="nav-menu">
+            <li>
+                <a href="#" data-page="dashboard" class="nav-item active">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">儀表板</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-page="documents" class="nav-item">
+                    <span class="nav-icon">📄</span>
+                    <span class="nav-text">單據管理</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-page="finance" class="nav-item">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-text">財務管理</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-page="contacts" class="nav-item">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">聯絡人</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-page="reports" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">報表</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" data-page="settings" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">設定</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <a href="index.html" class="legacy-link">
+                📝 舊版發票生成器
+            </a>
+        </div>
+    </nav>
+
+    <!-- 主要內容區域 -->
+    <main class="main-content">
+        <div id="mainContent">
+            <!-- 內容將由 app.js 動態載入 -->
+            <div class="loading">
+                <div class="loader"></div>
+                <p>載入中...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 載入腳本 -->
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
