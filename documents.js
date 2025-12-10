@@ -468,10 +468,6 @@ class DocumentManager {
         this.render();
     }
 
-    addNewContact(type) {
-        alert('新增聯絡人功能開發中...\n請先在「聯絡人」頁面新增');
-    }
-
     // ==================== 工具方法 ====================
 
     async generateDocNumber(type) {
