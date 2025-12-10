@@ -484,15 +484,18 @@ class DocumentManager {
         const pdf = new jsPDF();
         
         try {
-            // 載入中文字體
+            // 載入中文字體（如果失敗會降級到內建字體）
             console.log('正在載入字體...');
             const fontLoaded = await this.loadFont(pdf);
-            if (!fontLoaded) {
-                throw new Error('字體載入失敗');
-            }
             
-            // 設定字體
-            pdf.setFont("NotoSans", "normal");
+            if (fontLoaded) {
+                // 中文字體載入成功
+                pdf.setFont("NotoSans", "normal");
+            } else {
+                // 降級到內建字體
+                console.warn('⚠️ 使用內建字體，中文可能顯示為方塊');
+                pdf.setFont("helvetica");
+            }
             
             // 繪製 PDF 內容
             this.drawPDFContent(pdf, doc, contact, items);
@@ -501,7 +504,11 @@ class DocumentManager {
             const fileName = `${doc.doc_number}.pdf`;
             pdf.save(fileName);
             
-            console.log('✅ PDF 生成成功！');
+            if (!fontLoaded) {
+                alert('⚠️ PDF 已生成，但中文字體載入失敗\n\n建議：\n1. 檢查字體檔案是否存在\n2. 或上傳字體到 Supabase Storage');
+            } else {
+                console.log('✅ PDF 生成成功！');
+            }
             
         } catch (error) {
             console.error('❌ PDF 生成失敗:', error);
@@ -522,7 +529,10 @@ class DocumentManager {
             }
             
             if (!response.ok) {
-                throw new Error('無法載入字體檔案');
+                console.warn('字體載入失敗，使用內建字體');
+                // 使用 jsPDF 內建的基本字體，雖然不支援中文但至少能生成 PDF
+                pdf.setFont("helvetica");
+                return false;
             }
             
             const arrayBuffer = await response.arrayBuffer();
@@ -541,7 +551,9 @@ class DocumentManager {
             
         } catch (error) {
             console.error('❌ 字體載入失敗:', error);
-            alert('字體載入失敗，PDF 可能無法正確顯示中文');
+            console.warn('使用內建字體繼續生成 PDF');
+            // 降級到內建字體
+            pdf.setFont("helvetica");
             return false;
         }
     }
