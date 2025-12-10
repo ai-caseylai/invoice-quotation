@@ -164,6 +164,48 @@ class DocumentManager {
         const customers = await db.getCustomers();
         const suppliers = await db.getSuppliers();
 
+        // 檢查是否有聯絡人
+        const needsCustomer = (type === 'invoice' || type === 'quotation' || type === 'receipt');
+        const needsSupplier = (type === 'purchase_order');
+        
+        if (needsCustomer && customers.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">👤</div>
+                    <h2>尚無客戶資料</h2>
+                    <p>建立${this.getTypeName(type)}前，請先新增客戶資訊</p>
+                    <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center;">
+                        <button class="btn-primary" onclick="app.navigate('contacts')">
+                            👥 前往聯絡人管理
+                        </button>
+                        <button class="btn-secondary" onclick="documentManager.loadDocumentsList()">
+                            ← 返回列表
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        if (needsSupplier && suppliers.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🏢</div>
+                    <h2>尚無供應商資料</h2>
+                    <p>建立採購單前，請先新增供應商資訊</p>
+                    <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center;">
+                        <button class="btn-primary" onclick="app.navigate('contacts')">
+                            👥 前往聯絡人管理
+                        </button>
+                        <button class="btn-secondary" onclick="documentManager.loadDocumentsList()">
+                            ← 返回列表
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
         container.innerHTML = `
             <div class="document-form">
                 <div class="form-header">
@@ -219,9 +261,9 @@ class DocumentManager {
                                         : customers.map(c => `<option value="customer:${c.id}">${c.name}</option>`).join('')
                                     }
                                 </select>
-                                <button type="button" class="btn-link" onclick="documentManager.addNewContact('${type}')">
+                                <a href="#" class="btn-link" onclick="event.preventDefault(); app.navigate('contacts');">
                                     ➕ 新增${type === 'purchase_order' ? '供應商' : '客戶'}
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>
