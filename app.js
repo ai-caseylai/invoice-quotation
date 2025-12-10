@@ -196,13 +196,7 @@ class BookkeepingApp {
 
     async loadContacts() {
         console.log('載入聯絡人管理...');
-        const mainContent = document.getElementById('mainContent');
-        mainContent.innerHTML = `
-            <div class="contacts-page">
-                <h1>👥 聯絡人管理</h1>
-                <p>聯絡人管理功能開發中...</p>
-            </div>
-        `;
+        await contactManager.render();
     }
 
     async loadReports() {
