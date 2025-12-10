@@ -391,3 +391,376 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==================== 單據管理 ==================== */
+
+.documents-manager {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.documents-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.header-left h1 {
+    margin-bottom: 20px;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    padding: 8px 16px;
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.filter-tab:hover {
+    background: var(--bg-secondary);
+}
+
+.filter-tab.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+}
+
+.header-right {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-secondary {
+    padding: 12px 24px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary);
+}
+
+/* ==================== 單據表格 ==================== */
+
+.documents-table-container {
+    overflow-x: auto;
+}
+
+.documents-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.documents-table th {
+    padding: 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+}
+
+.documents-table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.documents-table tr:hover {
+    background: var(--bg-secondary);
+}
+
+.documents-table .amount {
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.doc-type-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.doc-type-badge.invoice {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.doc-type-badge.quotation {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.doc-type-badge.receipt {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.doc-type-badge.purchase_order {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-badge.draft {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.status-badge.sent {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-badge.paid {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.overdue {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-badge.cancelled {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    padding: 6px 10px;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-icon:hover {
+    background: var(--bg-secondary);
+    transform: scale(1.1);
+}
+
+.btn-icon.danger:hover {
+    background: #fee2e2;
+}
+
+/* ==================== 空狀態 ==================== */
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.empty-state h2 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+}
+
+/* ==================== 單據表單 ==================== */
+
+.document-form {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.form-section {
+    margin-bottom: 30px;
+}
+
+.form-section h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+}
+
+.btn-link {
+    padding: 6px 12px;
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 8px;
+}
+
+.btn-link:hover {
+    color: var(--primary-dark);
+}
+
+/* ==================== 項目行 ==================== */
+
+.item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+
+.item-row input {
+    padding: 10px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.item-row input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.item-row input[readonly] {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.item-name {
+    grid-column: 1;
+}
+
+.item-quantity {
+    grid-column: 2;
+}
+
+.item-price {
+    grid-column: 3;
+}
+
+.item-amount {
+    grid-column: 4;
+}
+
+/* ==================== 總計區域 ==================== */
+
+.totals-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    max-width: 400px;
+    margin-left: auto;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 16px;
+}
+
+.total-row.grand-total {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    border-top: 2px solid var(--border);
+    padding-top: 15px;
+    margin-top: 10px;
+}
+
+.total-row input {
+    padding: 6px 12px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    text-align: right;
+}
+
+/* ==================== 表單操作 ==================== */
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 30px;
+    border-top: 2px solid var(--border);
+}
+
+/* ==================== 響應式：單據管理 ==================== */
+
+@media (max-width: 968px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .item-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .documents-table {
+        font-size: 14px;
+    }
+    
+    .documents-table th,
+    .documents-table td {
+        padding: 8px;
+    }
+}

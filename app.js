@@ -180,16 +180,7 @@ class BookkeepingApp {
 
     async loadDocuments() {
         console.log('載入單據管理...');
-        const mainContent = document.getElementById('mainContent');
-        mainContent.innerHTML = `
-            <div class="documents-page">
-                <h1>📄 單據管理</h1>
-                <p>單據管理功能開發中...</p>
-                <button class="btn-primary" onclick="app.createNewDocument('invoice')">
-                    新增發票
-                </button>
-            </div>
-        `;
+        await documentManager.render();
     }
 
     async loadFinance() {
