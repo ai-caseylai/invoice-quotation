@@ -1,0 +1,252 @@
+✅ PDF 庫已修復！
+================================
+
+## 🐛 問題描述
+
+錯誤訊息：
+```
+生成PDF失敗：Cannot destructure property 'jsPDF' 
+of 'window.jspdf' as it is undefined.
+```
+
+**原因：** `index-new.html` 缺少 jsPDF 庫的引用
+
+---
+
+## ✅ 修復內容
+
+### 已添加的腳本：
+
+```html
+<!-- jsPDF for PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+```
+
+### 載入順序：
+
+```html
+1. jsPDF 庫（CDN）
+2. config.js
+3. db.js
+4. documents.js
+5. contacts.js
+6. app.js
+```
+
+---
+
+## 🧪 立即測試
+
+### **步驟 1：重新整理頁面** 🔄
+
+```
+按 Cmd + Shift + R（強制重新載入）
+或
+按 F5（普通重新載入）
+```
+
+### **步驟 2：檢查庫是否載入** ✅
+
+1. 打開開發者工具（F12）
+2. 在 Console 輸入：
+   ```javascript
+   window.jspdf
+   ```
+3. 應該看到：
+   ```javascript
+   {jsPDF: ƒ, ...}  // ✅ 成功
+   ```
+   而不是：
+   ```javascript
+   undefined  // ❌ 失敗
+   ```
+
+### **步驟 3：生成 PDF** 📄
+
+1. 前往「📄 單據管理」
+2. 找到任一單據
+3. 點擊 📄 按鈕
+4. 應該自動下載 PDF！✨
+
+---
+
+## 📊 預期結果
+
+### ✅ 成功標準
+
+1. **瀏覽器 Console**
+   ```
+   正在載入字體...
+   從 Supabase 載入字體...
+   Supabase 失敗，嘗試本地字體...
+   ✅ 字體載入成功
+   ✅ PDF 生成成功！
+   ```
+
+2. **下載檔案**
+   - 檔案名稱：`INV-202512-001.pdf`
+   - 自動下載到「下載」資料夾
+   - 可以正常打開和查看
+
+3. **PDF 內容**
+   - 中文正確顯示
+   - 包含客戶資訊
+   - 項目明細完整
+   - 金額計算正確
+
+---
+
+## 🐛 如果還有問題
+
+### **問題 1：jsPDF 還是 undefined**
+
+**檢查：**
+```javascript
+// 在 Console 檢查
+console.log(window.jspdf);
+```
+
+**可能原因：**
+1. 網路問題，CDN 載入失敗
+2. 瀏覽器快取問題
+
+**解決方案：**
+```bash
+# 方案 1：清除快取
+Cmd + Shift + Delete → 清除瀏覽器資料
+
+# 方案 2：下載本地副本
+curl -o jspdf.umd.min.js https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js
+
+# 然後修改 index-new.html
+<script src="jspdf.umd.min.js"></script>
+```
+
+---
+
+### **問題 2：字體載入失敗**
+
+**錯誤訊息：**
+```
+❌ 字體載入失敗: Error: 無法載入字體檔案
+```
+
+**原因：**
+- Supabase Storage 沒有字體
+- 本地也沒有字體檔案
+
+**解決方案：**
+
+#### **方法 A：上傳到 Supabase**
+```bash
+# 執行上傳腳本
+./upload-font.command
+
+# 或手動上傳
+# 1. 登入 Supabase Dashboard
+# 2. Storage → fonts bucket
+# 3. 上傳 NotoSansSC-Regular.ttf
+```
+
+#### **方法 B：確保本地字體**
+```bash
+# 檢查字體檔案
+ls -la NotoSansSC-Regular.ttf
+
+# 如果不存在，從專案根目錄複製
+cp NotoSansSC-Regular.ttf .
+```
+
+---
+
+### **問題 3：PDF 生成但是亂碼**
+
+**原因：** 字體載入失敗，使用了預設字體
+
+**檢查 Console：**
+```
+❌ 字體載入失敗，PDF 可能無法正確顯示中文
+```
+
+**解決：** 參考「問題 2」修復字體
+
+---
+
+## 📁 Git 提交
+
+```bash
+✅ 64bc512 Fix: Add jsPDF library to index-new.html
+✅ 70e6368 Add PDF generation testing guide
+✅ 360120d Add complete PDF generation with database integration
+```
+
+---
+
+## 🎯 完整的 HTML 結構
+
+```html
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>簡易記帳系統</title>
+    <link rel="stylesheet" href="style-new.css">
+</head>
+<body>
+    <!-- 側邊欄 -->
+    <nav class="sidebar">...</nav>
+    
+    <!-- 主內容 -->
+    <main class="main-content">...</main>
+    
+    <!-- ✅ 關鍵：按順序載入腳本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <script src="documents.js"></script>
+    <script src="contacts.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+```
+
+---
+
+## 🚀 立即測試
+
+### **5 秒快速測試：**
+
+```
+1. Cmd + Shift + R（重新整理）
+   ↓
+2. 前往「📄 單據」
+   ↓
+3. 點擊任一單據的 📄
+   ↓
+4. PDF 自動下載！✅
+```
+
+---
+
+## ✅ 驗證清單
+
+完成後打勾：
+
+- [ ] 重新整理了頁面（Cmd + Shift + R）
+- [ ] Console 沒有 jsPDF undefined 錯誤
+- [ ] 點擊 📄 按鈕
+- [ ] Console 顯示「✅ PDF 生成成功！」
+- [ ] PDF 自動下載
+- [ ] PDF 可以正常打開
+- [ ] 中文顯示正確
+- [ ] 客戶資訊完整
+
+---
+
+## 🎉 問題已解決！
+
+現在 PDF 生成功能應該完全正常了！
+
+**重新整理頁面，然後試試生成 PDF！** 🚀
+
+如果還有任何問題，請告訴我 Console 的完整錯誤訊息！
