@@ -1,0 +1,101 @@
+✅ Cloudflare Pages 部署檢查清單
+
+═══════════════════════════════════════════════════════════
+
+📦 專案準備（已完成）
+
+✅ Git 倉庫已初始化
+✅ .gitignore 已設定（排除大型字體檔案）
+✅ 所有核心檔案已提交
+✅ README.md 已創建
+✅ DEPLOY.md 部署文件已創建
+✅ 快速部署指南已創建
+
+═══════════════════════════════════════════════════════════
+
+🔧 Supabase 設定（需要完成）
+
+□ 已創建 Supabase 專案
+□ 已創建 fonts bucket
+□ 已設定 bucket 為 Public
+□ 已上傳 NotoSansSC-Regular.ttf
+□ 已測試字體 URL 可訪問
+
+   測試 URL：
+   https://你的專案ID.supabase.co/storage/v1/object/public/fonts/NotoSansSC-Regular.ttf
+
+   📖 詳細步驟請參考：SUPABASE-SETUP.md
+
+═══════════════════════════════════════════════════════════
+
+🚀 GitHub 上傳（待完成）
+
+□ 已安裝 GitHub Desktop
+□ 已登入 GitHub 帳號
+□ 已將專案添加到 GitHub Desktop
+□ 已發布倉庫（Publish repository）
+□ 倉庫名稱：invoice-generator
+□ 倉庫設為 Public
+
+═══════════════════════════════════════════════════════════
+
+☁️ Cloudflare Pages 部署（待完成）
+
+□ 已註冊 Cloudflare 帳號
+□ 已連接 GitHub
+□ 已選擇 invoice-generator 倉庫
+□ 部署設定：
+   • Framework preset: None
+   • Build command: 留空
+   • Build output directory: /
+□ 已完成部署
+□ 已獲得專案 URL
+
+═══════════════════════════════════════════════════════════
+
+🧪 功能測試（部署後測試）
+
+□ 頁面能正常打開
+□ 標籤切換正常（發票 ⇄ 報價單）
+□ 表單填寫正常
+□ 能新增項目
+□ 能刪除項目
+□ 總金額自動計算正確
+□ 點擊「生成PDF」能下載
+□ PDF 中文顯示正常（無方框）
+□ PDF 格式正確
+□ 手機瀏覽器顯示正常
+□ 平板瀏覽器顯示正常
+
+═══════════════════════════════════════════════════════════
+
+🎯 下一步行動
+
+1. 完成 Supabase 字體上傳
+   → 參考：SUPABASE-SETUP.md
+   → 或執行：./upload-font.command
+
+2. 上傳到 GitHub
+   → 使用 GitHub Desktop（最簡單）
+   → 參考：快速部署指南.txt
+
+3. 部署到 Cloudflare Pages
+   → 訪問：https://dash.cloudflare.com
+   → 參考：DEPLOY.md
+
+4. 測試所有功能
+   → 使用本檢查清單測試
+
+═══════════════════════════════════════════════════════════
+
+📚 相關文件
+
+• 快速部署指南.txt ← 開始這裡！
+• DEPLOY.md         ← 詳細步驟
+• SUPABASE-SETUP.md ← 字體設定
+• README.md         ← 專案說明
+• 使用说明.txt      ← 使用教學
+
+═══════════════════════════════════════════════════════════
+
+🎉 完成所有檢查後，你的應用程式就能在全球訪問了！
