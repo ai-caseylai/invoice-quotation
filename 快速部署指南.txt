@@ -1,0 +1,95 @@
+🚀 快速部署到 Cloudflare Pages（5 分鐘完成）
+
+═══════════════════════════════════════════════════════════
+
+📋 準備工作（只需一次）
+
+1. 註冊帳號（如果還沒有）
+   □ GitHub: https://github.com/signup
+   □ Cloudflare: https://dash.cloudflare.com/sign-up
+
+2. 安裝工具（推薦）
+   □ GitHub Desktop: https://desktop.github.com
+
+═══════════════════════════════════════════════════════════
+
+🎯 部署步驟（3 步驟）
+
+步驟 1️⃣：上傳到 GitHub（最簡單方法）
+
+   A. 下載並打開 GitHub Desktop
+   B. 登入你的 GitHub 帳號
+   C. 點擊 File → Add Local Repository
+   D. 選擇這個專案資料夾：
+      /Users/apple/Desktop/development/invoice&quotation
+   E. 點擊 "Publish repository"
+   F. 倉庫名稱輸入：invoice-generator
+   G. 確保選擇 "Public"（公開）
+   H. 點擊 "Publish Repository"
+   
+   ✅ 完成！倉庫已上傳到 GitHub
+
+---
+
+步驟 2️⃣：連接 Cloudflare Pages
+
+   A. 訪問：https://dash.cloudflare.com
+   B. 登入你的 Cloudflare 帳號
+   C. 點擊左側選單 "Workers & Pages"
+   D. 點擊 "Create application"
+   E. 選擇 "Pages" 標籤
+   F. 點擊 "Connect to Git"
+   G. 點擊 "Connect GitHub"
+   H. 授權 Cloudflare 存取你的 GitHub
+   I. 選擇 "invoice-generator" 倉庫
+   
+   ✅ 完成！已連接 GitHub
+
+---
+
+步驟 3️⃣：設定並部署
+
+   A. Project name: invoice-generator（或你喜歡的名稱）
+   B. Production branch: main
+   C. Framework preset: None
+   D. Build command: 留空
+   E. Build output directory: /
+   F. 點擊 "Save and Deploy"
+   
+   ⏳ 等待 1-2 分鐘...
+   
+   ✅ 完成！部署成功！
+
+═══════════════════════════════════════════════════════════
+
+🎉 部署後你會獲得：
+
+   • 免費 HTTPS 網址：https://invoice-generator-xxx.pages.dev
+   • 全球 CDN 加速
+   • 無限流量
+   • 自動 SSL 證書
+   • 每次 Git 推送自動更新
+
+═══════════════════════════════════════════════════════════
+
+🔄 如何更新網站？
+
+   使用 GitHub Desktop：
+   1. 修改檔案後打開 GitHub Desktop
+   2. 查看變更
+   3. 填寫 Commit message
+   4. 點擊 "Commit to main"
+   5. 點擊 "Push origin"
+   6. Cloudflare 會自動重新部署！
+
+═══════════════════════════════════════════════════════════
+
+❓ 遇到問題？
+
+   • 詳細步驟請查看：DEPLOY.md
+   • 字體設定指南：SUPABASE-SETUP.md
+   • 程式使用說明：使用说明.txt
+
+═══════════════════════════════════════════════════════════
+
+祝部署順利！🚀
