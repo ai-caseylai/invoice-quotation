@@ -1,0 +1,3 @@
+- [User Profile](user_profile.md) — Casey Lai, CEO of Muse Labs Engineering Limited
+- [PDF Generation Preferences](pdf_preferences.md) — Layout, spacing, and formatting preferences for invoices/quotations
+- [PDF Generator Workflow](pdf_generator_workflow.md) — How to generate PDFs using gen_quo_from_json.py
