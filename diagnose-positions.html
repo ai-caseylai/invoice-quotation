@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 位置診斷工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f1f3f5;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 PDF 元件位置診斷工具</h1>
+        
+        <div class="section">
+            <h3>🔍 當前 Supabase 位置數據</h3>
+            <button class="btn" onclick="loadAndDiagnose()">載入並診斷位置</button>
+            <div id="currentPositions" style="margin-top: 20px;"></div>
+        </div>
+
+        <div class="section">
+            <h3>📏 座標系統說明</h3>
+            <table>
+                <tr>
+                    <th>項目</th>
+                    <th>預覽器 (px)</th>
+                    <th>PDF (mm)</th>
+                    <th>說明</th>
+                </tr>
+                <tr>
+                    <td>寬度</td>
+                    <td>595px</td>
+                    <td>210mm (A4)</td>
+                    <td>X 軸比例: 0.352941</td>
+                </tr>
+                <tr>
+                    <td>高度</td>
+                    <td>842px</td>
+                    <td>297mm (A4)</td>
+                    <td>Y 軸比例: 0.352734</td>
+                </tr>
+                <tr>
+                    <td>左邊距</td>
+                    <td>40px</td>
+                    <td>14.12mm</td>
+                    <td>最小邊距</td>
+                </tr>
+                <tr>
+                    <td>右邊界</td>
+                    <td>555px</td>
+                    <td>195.88mm</td>
+                    <td>595 - 40 = 555</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>🎯 元件對齊方式</h3>
+            <table>
+                <tr>
+                    <th>元件名稱</th>
+                    <th>對齊方式</th>
+                    <th>left 值含義</th>
+                    <th>建議值 (px)</th>
+                </tr>
+                <tr>
+                    <td><code>logo</code></td>
+                    <td>左對齊</td>
+                    <td>左邊界 X 座標</td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><code>company-info</code></td>
+                    <td>右對齊</td>
+                    <td>右邊界 X 座標</td>
+                    <td>555</td>
+                </tr>
+                <tr>
+                    <td><code>title</code></td>
+                    <td>居中對齊</td>
+                    <td>中心點 X 座標</td>
+                    <td>297.5</td>
+                </tr>
+                <tr>
+                    <td><code>separator-line</code></td>
+                    <td>左對齊</td>
+                    <td>左邊界 X 座標</td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><code>invoice-info</code></td>
+                    <td>左對齊</td>
+                    <td>左邊界 X 座標</td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><code>customer-info</code></td>
+                    <td>右對齊</td>
+                    <td>右邊界 X 座標</td>
+                    <td>555</td>
+                </tr>
+                <tr>
+                    <td><code>customer-detail</code></td>
+                    <td>左對齊</td>
+                    <td>左邊界 X 座標</td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><code>items-table</code></td>
+                    <td>左對齊</td>
+                    <td>左邊界 X 座標</td>
+                    <td>40</td>
+                </tr>
+                <tr>
+                    <td><code>total</code></td>
+                    <td>右對齊</td>
+                    <td>右邊界 X 座標</td>
+                    <td>555</td>
+                </tr>
+                <tr>
+                    <td><code>notes</code></td>
+                    <td>左對齊</td>
+                    <td>左邊界 X 座標</td>
+                    <td>40</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            CONFIG.SUPABASE.URL,
+            CONFIG.SUPABASE.ANON_KEY
+        );
+
+        async function loadAndDiagnose() {
+            try {
+                // 載入當前位置
+                const { data, error } = await supabase
+                    .from('pdf_element_positions')
+                    .select('*')
+                    .order('updated_at', { ascending: false })
+                    .limit(1);
+
+                if (error) throw error;
+
+                const positions = data && data.length > 0 ? data[0].positions : {};
+                
+                console.log('載入的位置:', positions);
+                
+                // 分析每個元件
+                let html = '<table>';
+                html += '<tr><th>元件</th><th>當前 left (px)</th><th>對齊方式</th><th>狀態</th><th>建議值</th></tr>';
+
+                const alignments = {
+                    'logo': { align: 'left', correct: 40 },
+                    'company-info': { align: 'right', correct: 555 },
+                    'title': { align: 'center', correct: 297.5 },
+                    'separator-line': { align: 'left', correct: 40 },
+                    'invoice-info': { align: 'left', correct: 40 },
+                    'customer-info': { align: 'right', correct: 555 },
+                    'customer-detail': { align: 'left', correct: 40 },
+                    'items-table': { align: 'left', correct: 40 },
+                    'total': { align: 'right', correct: 555 },
+                    'notes': { align: 'left', correct: 40 }
+                };
+
+                for (const [key, info] of Object.entries(alignments)) {
+                    const pos = positions[key];
+                    if (!pos) {
+                        html += `<tr class="error">
+                            <td><code>${key}</code></td>
+                            <td>❌ 缺失</td>
+                            <td>${info.align}</td>
+                            <td>未設定</td>
+                            <td>${info.correct}px</td>
+                        </tr>`;
+                        continue;
+                    }
+
+                    const currentLeft = pos.left;
+                    const isCorrect = Math.abs(currentLeft - info.correct) < 5;
+                    const status = isCorrect ? '✅ 正確' : `⚠️ 錯誤 (差距: ${(currentLeft - info.correct).toFixed(1)}px)`;
+                    const rowClass = isCorrect ? 'success' : 'warning';
+
+                    html += `<tr class="${rowClass}">
+                        <td><code>${key}</code></td>
+                        <td>${currentLeft}px</td>
+                        <td>${info.align}</td>
+                        <td>${status}</td>
+                        <td>${info.correct}px</td>
+                    </tr>`;
+                }
+
+                html += '</table>';
+                
+                document.getElementById('currentPositions').innerHTML = html;
+
+            } catch (error) {
+                console.error('診斷失敗:', error);
+                document.getElementById('currentPositions').innerHTML = 
+                    `<div class="error section">❌ 載入失敗: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

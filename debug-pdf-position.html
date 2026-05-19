@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>🔍 PDF 位置調試工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .box h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .preview-wrapper {
+            border: 2px solid #667eea;
+            border-radius: 4px;
+            padding: 10px;
+            background: #f9f9f9;
+            display: inline-block;
+        }
+        .preview {
+            width: 595px;
+            height: 842px;
+            background: white;
+            border: 1px solid #ddd;
+            position: relative;
+            overflow: hidden;
+        }
+        .element {
+            position: absolute;
+            border: 2px solid #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .info-value {
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 PDF 位置調試工具</h1>
+            <p>用於檢查預覽器與 PDF 之間的座標轉換</p>
+        </div>
+
+        <div class="grid">
+            <!-- 左側：預覽器 -->
+            <div class="box">
+                <h2>📐 預覽器 (595×842 px)</h2>
+                <div class="preview-wrapper">
+                    <div class="preview" id="preview">
+                        <!-- 元件會動態添加 -->
+                    </div>
+                </div>
+                <div class="info">
+                    <div class="info-row">
+                        <span class="info-label">實際寬度：</span>
+                        <span class="info-value" id="actualWidth">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">實際高度：</span>
+                        <span class="info-value" id="actualHeight">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">元件數量：</span>
+                        <span class="info-value" id="elementCount">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：資訊 -->
+            <div class="box">
+                <h2>📊 載入的位置數據</h2>
+                <div style="margin-bottom: 15px;">
+                    <button class="btn" onclick="loadPositions()">📥 載入 localStorage</button>
+                    <button class="btn" onclick="testConversion()">🔄 測試轉換</button>
+                    <button class="btn" onclick="clearAll()">🗑️ 清除</button>
+                </div>
+                <div id="status"></div>
+                <pre id="positions-data" style="max-height: 400px;">點擊「載入 localStorage」按鈕...</pre>
+
+                <h2 style="margin-top: 20px;">🔄 座標轉換測試</h2>
+                <pre id="conversion-data" style="max-height: 300px;">點擊「測試轉換」按鈕...</pre>
+            </div>
+        </div>
+
+        <div class="box" style="margin-top: 20px;">
+            <h2>⚠️ 問題診斷</h2>
+            <pre id="diagnosis"></pre>
+        </div>
+    </div>
+
+    <script>
+        const pdfWidth = 595;   // PDF 預覽器寬度
+        const pdfHeight = 842;  // PDF 預覽器高度
+        const pageWidth = 210;  // A4 寬度 (mm)
+        const pageHeight = 297; // A4 高度 (mm)
+
+        // 顯示實際容器尺寸
+        function updateContainerInfo() {
+            const preview = document.getElementById('preview');
+            const rect = preview.getBoundingClientRect();
+            
+            document.getElementById('actualWidth').textContent = `${rect.width.toFixed(2)}px`;
+            document.getElementById('actualHeight').textContent = `${rect.height.toFixed(2)}px`;
+            
+            // 檢查是否與預期一致
+            if (Math.abs(rect.width - pdfWidth) > 1 || Math.abs(rect.height - pdfHeight) > 1) {
+                showStatus(`⚠️ 警告：實際尺寸 (${rect.width.toFixed(2)}×${rect.height.toFixed(2)}) 與預期 (${pdfWidth}×${pdfHeight}) 不符！`, 'error');
+            } else {
+                showStatus(`✅ 容器尺寸正確`, 'success');
+            }
+        }
+
+        // 載入位置數據
+        function loadPositions() {
+            try {
+                const saved = localStorage.getItem('pdfElementPositions');
+                if (!saved) {
+                    showStatus('❌ localStorage 中沒有位置數據', 'error');
+                    document.getElementById('positions-data').textContent = '沒有儲存的位置數據';
+                    return;
+                }
+
+                const positions = JSON.parse(saved);
+                document.getElementById('positions-data').textContent = JSON.stringify(positions, null, 2);
+                document.getElementById('elementCount').textContent = Object.keys(positions).length;
+
+                // 繪製元件
+                drawElements(positions);
+                
+                showStatus(`✅ 成功載入 ${Object.keys(positions).length} 個元件`, 'success');
+                
+                // 更新容器資訊
+                updateContainerInfo();
+            } catch (e) {
+                showStatus(`❌ 載入失敗: ${e.message}`, 'error');
+                console.error(e);
+            }
+        }
+
+        // 繪製元件
+        function drawElements(positions) {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+
+            Object.keys(positions).forEach(key => {
+                const pos = positions[key];
+                const element = document.createElement('div');
+                element.className = 'element';
+                element.style.left = pos.left + 'px';
+                element.style.top = pos.top + 'px';
+                element.style.width = (pos.width || 100) + 'px';
+                element.style.height = (pos.height || 50) + 'px';
+                element.textContent = key;
+                element.title = `${key}\nLeft: ${pos.left}px\nTop: ${pos.top}px\nWidth: ${pos.width}px\nHeight: ${pos.height}px`;
+                preview.appendChild(element);
+            });
+        }
+
+        // 測試座標轉換
+        function testConversion() {
+            try {
+                const saved = localStorage.getItem('pdfElementPositions');
+                if (!saved) {
+                    showStatus('❌ 請先載入位置數據', 'error');
+                    return;
+                }
+
+                const positions = JSON.parse(saved);
+                let output = '=== 座標轉換測試 ===\n\n';
+                output += `轉換比例:\n`;
+                output += `  X軸: ${(pageWidth / pdfWidth).toFixed(6)} (${pageWidth}mm / ${pdfWidth}px)\n`;
+                output += `  Y軸: ${(pageHeight / pdfHeight).toFixed(6)} (${pageHeight}mm / ${pdfHeight}px)\n\n`;
+
+                Object.keys(positions).forEach(key => {
+                    const pos = positions[key];
+                    const xMm = (pos.left / pdfWidth) * pageWidth;
+                    const yMm = (pos.top / pdfHeight) * pageHeight;
+                    const wMm = ((pos.width || 0) / pdfWidth) * pageWidth;
+                    const hMm = ((pos.height || 0) / pdfHeight) * pageHeight;
+
+                    output += `${key}:\n`;
+                    output += `  原始 (px): left=${pos.left}, top=${pos.top}, w=${pos.width}, h=${pos.height}\n`;
+                    output += `  轉換 (mm): x=${xMm.toFixed(2)}, y=${yMm.toFixed(2)}, w=${wMm.toFixed(2)}, h=${hMm.toFixed(2)}\n`;
+                    output += `  右邊界: ${(xMm + wMm).toFixed(2)}mm (頁面寬度: ${pageWidth}mm)\n`;
+                    output += `  下邊界: ${(yMm + hMm).toFixed(2)}mm (頁面高度: ${pageHeight}mm)\n\n`;
+                });
+
+                document.getElementById('conversion-data').textContent = output;
+                showStatus('✅ 轉換測試完成', 'success');
+                
+                // 執行診斷
+                diagnose(positions);
+            } catch (e) {
+                showStatus(`❌ 轉換測試失敗: ${e.message}`, 'error');
+                console.error(e);
+            }
+        }
+
+        // 診斷問題
+        function diagnose(positions) {
+            let diagnosis = '=== 問題診斷 ===\n\n';
+            let hasIssues = false;
+
+            Object.keys(positions).forEach(key => {
+                const pos = positions[key];
+                const xMm = (pos.left / pdfWidth) * pageWidth;
+                const yMm = (pos.top / pdfHeight) * pageHeight;
+                const wMm = ((pos.width || 0) / pdfWidth) * pageWidth;
+                const hMm = ((pos.height || 0) / pdfHeight) * pageHeight;
+                const rightEdge = xMm + wMm;
+                const bottomEdge = yMm + hMm;
+
+                const issues = [];
+
+                // 檢查左邊界
+                if (xMm < 10) {
+                    issues.push(`⚠️ 左邊距過小 (${xMm.toFixed(2)}mm < 10mm)`);
+                }
+
+                // 檢查右邊界
+                if (rightEdge > pageWidth) {
+                    issues.push(`⚠️ 超出右邊界 (${rightEdge.toFixed(2)}mm > ${pageWidth}mm)`);
+                }
+
+                // 檢查上邊界
+                if (yMm < 10) {
+                    issues.push(`⚠️ 上邊距過小 (${yMm.toFixed(2)}mm < 10mm)`);
+                }
+
+                // 檢查下邊界
+                if (bottomEdge > pageHeight) {
+                    issues.push(`⚠️ 超出下邊界 (${bottomEdge.toFixed(2)}mm > ${pageHeight}mm)`);
+                }
+
+                if (issues.length > 0) {
+                    hasIssues = true;
+                    diagnosis += `${key}:\n`;
+                    issues.forEach(issue => {
+                        diagnosis += `  ${issue}\n`;
+                    });
+                    diagnosis += '\n';
+                }
+            });
+
+            if (!hasIssues) {
+                diagnosis += '✅ 所有元件位置正常，沒有發現問題。\n';
+            }
+
+            // 檢查容器尺寸
+            const preview = document.getElementById('preview');
+            const rect = preview.getBoundingClientRect();
+            if (Math.abs(rect.width - pdfWidth) > 1 || Math.abs(rect.height - pdfHeight) > 1) {
+                diagnosis += '\n❌ 容器尺寸問題：\n';
+                diagnosis += `  預期: ${pdfWidth}×${pdfHeight}px\n`;
+                diagnosis += `  實際: ${rect.width.toFixed(2)}×${rect.height.toFixed(2)}px\n`;
+                diagnosis += '  這可能導致座標轉換不準確！\n';
+            }
+
+            document.getElementById('diagnosis').textContent = diagnosis;
+        }
+
+        // 清除
+        function clearAll() {
+            document.getElementById('preview').innerHTML = '';
+            document.getElementById('positions-data').textContent = '已清除';
+            document.getElementById('conversion-data').textContent = '已清除';
+            document.getElementById('diagnosis').textContent = '已清除';
+            document.getElementById('elementCount').textContent = '-';
+            showStatus('✅ 已清除所有數據', 'success');
+        }
+
+        // 顯示狀態
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        // 初始化
+        updateContainerInfo();
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "invoice_no": "INV026-0441",
+  "output_filename": "INV026-0441_WilliamLee_TVP.pdf",
+  "date": "21/04/2026",
+  "customer": "William Lee, Paul Tang & Co.",
+  "attention": "Timothy Tang",
+  "tel": "+852 2541 8617",
+  "email": "timothy.tang@twincentre.com",
+  "address": "Room 405, Tung Ning Building, 249-251 Des Voeux Road Central, Hong Kong",
+  "items": [
+    { "no": 1, "description": "系統分析及設計", "qty": 1, "unit_price": 25000 },
+    { "no": 2, "description": "系統開發及程式編寫", "qty": 1, "unit_price": 80000 },
+    { "no": 3, "description": "數據遷移及導入", "qty": 1, "unit_price": 30000 },
+    { "no": 4, "description": "系統測試及部署", "qty": 1, "unit_price": 25000 },
+    { "no": 5, "description": "用戶培訓", "qty": 1, "unit_price": 10000 },
+    { "no": 6, "description": "12個月系統維護及支援", "qty": 1, "unit_price": 30000 }
+  ],
+  "subtotal": 200000,
+  "discount": 0,
+  "total": 200000,
+  "deposit": 20000,
+  "deposit_label": "10% 起動訂金 (10% Startup Deposit)",
+  "remark": "科技券計劃 (TVP) - 創新科技署",
+  "payment_terms": "Advanced payment",
+  "chop": "Muse Lab chop.png"
+}

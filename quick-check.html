@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>快速檢查</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <style>
+        body { 
+            font-family: monospace; 
+            padding: 20px; 
+            background: #1a1a2e;
+            color: #eee;
+        }
+        pre { 
+            background: #16213e; 
+            padding: 20px; 
+            border-radius: 8px;
+            border-left: 4px solid #0f3460;
+        }
+        .warning { color: #ffa500; }
+        .error { color: #ff4444; }
+        .success { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <h2>🔍 當前 Supabase 位置數據</h2>
+    <div id="output">載入中...</div>
+
+    <script>
+        (async () => {
+            try {
+                const positions = await db.getPDFElementPositions();
+                
+                let html = '<pre>';
+                html += '<span class="success">✅ 成功載入位置數據\n\n</span>';
+                
+                const critical = {
+                    'title': { current: positions.title?.left, recommended: 297.5, reason: '居中' },
+                    'company-info': { current: positions['company-info']?.left, recommended: 555, reason: '右對齊' },
+                    'customer-info': { current: positions['customer-info']?.left, recommended: 555, reason: '右對齊' },
+                    'total': { current: positions.total?.left, recommended: 555, reason: '右對齊' }
+                };
+                
+                html += '【關鍵元件位置】\n';
+                for (const [key, info] of Object.entries(critical)) {
+                    const diff = Math.abs(info.current - info.recommended);
+                    const status = diff < 5 ? '<span class="success">✅</span>' : '<span class="error">❌</span>';
+                    const diffText = diff < 5 ? '' : ` (差距: ${diff.toFixed(1)}px)`;
+                    
+                    html += `\n${status} ${key}:`;
+                    html += `\n   當前值: ${info.current}px`;
+                    html += `\n   建議值: ${info.recommended}px (${info.reason})`;
+                    html += `\n   狀態: ${diff < 5 ? '<span class="success">正確</span>' : '<span class="warning">需要調整</span>'}${diffText}`;
+                    html += '\n';
+                }
+                
+                html += '\n\n【完整位置數據】\n';
+                html += JSON.stringify(positions, null, 2);
+                html += '</pre>';
+                
+                // 如果有錯誤，提供修復建議
+                const hasErrors = Object.values(critical).some(info => Math.abs(info.current - info.recommended) >= 5);
+                if (hasErrors) {
+                    html += '<div style="background: #4a4a00; padding: 15px; margin-top: 20px; border-radius: 8px;">';
+                    html += '<h3 style="color: #ffff00;">⚠️ 建議操作</h3>';
+                    html += '<p>1. 打開 <code>fix-positions-now.html</code></p>';
+                    html += '<p>2. 點擊 "⚡ 立即修復" 按鈕</p>';
+                    html += '<p>3. 重新生成 PDF 測試</p>';
+                    html += '</div>';
+                }
+                
+                document.getElementById('output').innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('output').innerHTML = 
+                    `<pre><span class="error">❌ 錯誤: ${error.message}</span></pre>`;
+            }
+        })();
+    </script>
+</body>
+</html>

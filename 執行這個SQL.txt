@@ -1,0 +1,8 @@
+請複製以下 SQL 並在 Supabase SQL Editor 中執行：
+
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS bank_name TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS bank_account TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS bank_code TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS bank_swift TEXT;
+
+執行完成後，重新整理頁面即可使用 Logo 上傳和銀行資料功能！

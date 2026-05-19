@@ -1,0 +1,243 @@
+📋 快速修復指南 - 預視與 PDF 不同步
+=====================================
+
+## 問題現象
+
+✅ 預視圖：Logo 大、位置正確
+❌ PDF：Logo 小、位置可能不對
+
+## 核心原因
+
+Logo 圖片加載後，瀏覽器自動調整了容器尺寸，但這個新尺寸沒有保存到 localStorage 中，導致 PDF 生成時使用了預設的 150×75px 尺寸。
+
+## 立即修復方案
+
+### 方案 A：使用修復工具（推薦）
+
+1. **打開修復工具**
+   ```
+   開啟：fix-logo-size.html
+   ```
+
+2. **檢查當前數據**
+   ```
+   點擊「📋 檢查數據」
+   查看 Logo 是否有 width 和 height
+   ```
+
+3. **更新 Logo 尺寸**
+   ```
+   輸入預視圖中實際的 Logo 尺寸
+   例如：寬度 200px，高度 120px
+   點擊「💾 更新 Logo 尺寸」
+   ```
+
+4. **重新生成 PDF**
+   ```
+   返回單據管理
+   下載任意 PDF
+   檢查 Logo 尺寸
+   ```
+
+### 方案 B：手動修復（適合理解原理）
+
+1. **打開瀏覽器控制台**（F12）
+
+2. **檢查位置數據**
+   ```javascript
+   const positions = JSON.parse(localStorage.getItem('pdfElementPositions'));
+   console.log('Logo 數據:', positions.logo);
+   ```
+
+3. **如果沒有 width/height，手動添加**
+   ```javascript
+   positions.logo = {
+       left: 40,    // 或你實際的位置
+       top: 40,
+       width: 200,  // 預視圖中的實際寬度
+       height: 120  // 預視圖中的實際高度
+   };
+   localStorage.setItem('pdfElementPositions', JSON.stringify(positions));
+   console.log('✅ 已更新');
+   ```
+
+4. **重新生成 PDF 測試**
+
+### 方案 C：完全重置（最保險）
+
+1. **清除所有數據**
+   ```javascript
+   localStorage.removeItem('pdfElementPositions');
+   ```
+
+2. **重新打開 PDF 排版控制器**
+   ```
+   點擊「🎨 PDF 排版控制器」
+   ```
+
+3. **調整 Logo**
+   - Logo 會自動載入實際圖片
+   - 拖動 Logo 到合適位置
+   - 拖動右下角手柄調整大小
+   - 確認尺寸合適
+
+4. **儲存設定**
+   ```
+   點擊「💾 儲存設定與位置」
+   ```
+
+5. **驗證**
+   - 打開 fix-logo-size.html
+   - 點擊「📋 檢查數據」
+   - 確認 Logo 有 width 和 height
+
+6. **生成 PDF 測試**
+
+## 測試工具
+
+已創建以下測試頁面幫助你調試：
+
+### 1. fix-logo-size.html
+   - 檢查和修復 Logo 尺寸
+   - 快速更新位置數據
+   - 清除和重置選項
+
+### 2. test-position-sync.html
+   - 視覺化顯示所有元件位置
+   - 顯示座標轉換結果
+   - 驗證位置數據
+
+### 3. test-pdf-layout.html
+   - 並排對比預視圖和 PDF
+   - 生成帶網格的測試 PDF
+   - 詳細的座標轉換數據
+
+## 驗證步驟
+
+修復後，請按以下步驟驗證：
+
+1. **檢查 localStorage**
+   ```javascript
+   const positions = JSON.parse(localStorage.getItem('pdfElementPositions'));
+   console.table(positions.logo);
+   ```
+   
+   應該看到：
+   ```
+   left    | 40
+   top     | 40
+   width   | 200  ✓
+   height  | 120  ✓
+   ```
+
+2. **檢查座標轉換**
+   ```javascript
+   const pxToMm = (px) => (px / 595) * 210;
+   const pyToMm = (py) => (py / 842) * 297;
+   
+   console.log('Logo PDF 位置:');
+   console.log('  X:', pxToMm(40), 'mm');
+   console.log('  Y:', pyToMm(40), 'mm');
+   console.log('  寬:', pxToMm(200), 'mm');
+   console.log('  高:', pyToMm(120), 'mm');
+   ```
+
+3. **生成測試 PDF**
+   - 在 test-pdf-layout.html 中生成帶網格的 PDF
+   - 檢查 Logo 框的位置和大小
+
+4. **生成真實 PDF**
+   - 在單據管理中下載 PDF
+   - Logo 應該與預視圖一致
+
+## 預期結果
+
+✅ 預視圖 Logo：200×120 px @ (40, 40)
+✅ PDF Logo：70.6×42.4 mm @ (14.1, 14.1)
+✅ 視覺效果：兩者完全一致
+
+## 如果問題仍然存在
+
+請收集以下信息：
+
+1. **控制台輸出**
+   - 生成 PDF 時的日誌
+   - 特別注意 "Logo 原始位置" 和 "Logo 轉換位置"
+
+2. **位置數據**
+   ```javascript
+   console.log(JSON.stringify(
+       JSON.parse(localStorage.getItem('pdfElementPositions')),
+       null, 2
+   ));
+   ```
+
+3. **截圖**
+   - 預視圖（顯示 Logo）
+   - 生成的 PDF
+   - fix-logo-size.html 的檢查數據
+
+4. **測試 PDF**
+   - 從 test-pdf-layout.html 生成的帶網格 PDF
+
+## 技術細節
+
+### 座標系統
+
+```
+預視器：595×842 px
+PDF：   210×297 mm (A4)
+
+轉換公式：
+  mm = (px / 595) × 210  (X 軸)
+  mm = (px / 842) × 297  (Y 軸)
+```
+
+### Logo 尺寸處理
+
+```javascript
+// 預視器中 Logo 加載時
+img.onload = () => {
+    const ratio = img.naturalWidth / img.naturalHeight;
+    const newHeight = width / ratio;
+    
+    // 應該保存到 localStorage
+    positions.logo = {
+        left: ...,
+        top: ...,
+        width: width,    // 必須保存！
+        height: newHeight // 必須保存！
+    };
+};
+```
+
+### PDF 生成時
+
+```javascript
+// documents.js 中
+const logoPos = positions.logo || { left: 40, top: 40, width: 150, height: 75 };
+const logoW = pxToMm(logoPos.width);  // 如果沒有 width，使用預設值
+const logoH = pyToMm(logoPos.height); // 如果沒有 height，使用預設值
+
+pdf.addImage(company.logo_url, 'PNG', logoX, logoY, logoW, logoH);
+```
+
+## 常見錯誤
+
+❌ 忘記儲存設定
+❌ 沒有調整 Logo 大小（只拖動了位置）
+❌ 清除了瀏覽器數據
+❌ Logo URL 無效或無法訪問
+❌ CORS 錯誤導致圖片無法載入
+
+## 最佳實踐
+
+1. 每次調整排版後都要點擊「儲存」
+2. 使用測試工具驗證位置數據
+3. 生成測試 PDF 確認效果
+4. 保留一份位置數據的備份
+
+---
+
+更新時間：2025-12-10
+版本：v2.1

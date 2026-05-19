@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 調試工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        #log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            margin: 3px 0;
+        }
+        .log-error { color: #f48771; }
+        .log-warn { color: #dcdcaa; }
+        .log-success { color: #4ec9b0; }
+        .log-info { color: #9cdcfe; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 PDF 生成調試工具</h1>
+        
+        <div class="test-section">
+            <h2>測試選項</h2>
+            <button onclick="testSimplePDF()">測試簡單 PDF</button>
+            <button onclick="testWithFont()">測試含字體 PDF</button>
+            <button onclick="testWithImage()">測試含圖片 PDF</button>
+            <button onclick="testFullPDF()">測試完整 PDF</button>
+            <button onclick="clearLog()">清除日誌</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>執行日誌</h2>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        const logEl = document.getElementById('log');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            logEl.innerHTML = '';
+        }
+        
+        // 測試 1: 最簡單的 PDF
+        function testSimplePDF() {
+            try {
+                log('開始測試簡單 PDF...', 'info');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                pdf.setFontSize(20);
+                pdf.text('Hello World', 20, 20);
+                pdf.text('This is a test PDF', 20, 40);
+                
+                pdf.save('test-simple.pdf');
+                log('✅ 簡單 PDF 生成成功！', 'success');
+            } catch (error) {
+                log(`❌ 錯誤: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // 測試 2: 含字體的 PDF
+        async function testWithFont() {
+            try {
+                log('開始測試字體 PDF...', 'info');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                // 嘗試載入字體
+                log('嘗試載入字體...', 'info');
+                try {
+                    const response = await fetch('./NotoSansSC-Regular.ttf');
+                    if (!response.ok) throw new Error('字體檔案不存在');
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    const fontBase64 = btoa(
+                        new Uint8Array(arrayBuffer).reduce((data, byte) => 
+                            data + String.fromCharCode(byte), '')
+                    );
+                    
+                    pdf.addFileToVFS("NotoSansSC.ttf", fontBase64);
+                    pdf.addFont("NotoSansSC.ttf", "NotoSans", "normal");
+                    pdf.setFont("NotoSans");
+                    log('✅ 字體載入成功', 'success');
+                } catch (fontError) {
+                    log(`⚠️ 字體載入失敗: ${fontError.message}`, 'warn');
+                    pdf.setFont("helvetica");
+                }
+                
+                pdf.setFontSize(20);
+                pdf.text('中文測試', 20, 20);
+                pdf.text('English Test', 20, 40);
+                
+                pdf.save('test-with-font.pdf');
+                log('✅ 字體 PDF 生成成功！', 'success');
+            } catch (error) {
+                log(`❌ 錯誤: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // 測試 3: 含圖片的 PDF
+        async function testWithImage() {
+            try {
+                log('開始測試圖片 PDF...', 'info');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                pdf.setFontSize(20);
+                pdf.text('Testing Image in PDF', 20, 20);
+                
+                // 創建一個簡單的測試圖片
+                const canvas = document.createElement('canvas');
+                canvas.width = 100;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#667eea';
+                ctx.fillRect(0, 0, 100, 100);
+                ctx.fillStyle = 'white';
+                ctx.font = '20px Arial';
+                ctx.fillText('LOGO', 25, 55);
+                
+                const imgData = canvas.toDataURL('image/png');
+                log('圖片已創建', 'info');
+                
+                try {
+                    pdf.addImage(imgData, 'PNG', 20, 30, 50, 50);
+                    log('✅ 圖片已添加到 PDF', 'success');
+                } catch (imgError) {
+                    log(`⚠️ 圖片添加失敗: ${imgError.message}`, 'warn');
+                }
+                
+                pdf.save('test-with-image.pdf');
+                log('✅ 圖片 PDF 生成成功！', 'success');
+            } catch (error) {
+                log(`❌ 錯誤: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        // 測試 4: 完整的 PDF（模擬實際場景）
+        async function testFullPDF() {
+            try {
+                log('開始測試完整 PDF...', 'info');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                let y = 20;
+                
+                // Header
+                log('繪製標題...', 'info');
+                pdf.setFontSize(24);
+                pdf.text('INVOICE', 105, y, { align: 'center' });
+                y += 15;
+                
+                // Line
+                log('繪製分隔線...', 'info');
+                pdf.setDrawColor(102, 126, 234);
+                pdf.setLineWidth(0.8);
+                pdf.line(20, y, 190, y);
+                y += 10;
+                
+                // Info box
+                log('繪製資訊框...', 'info');
+                pdf.setFillColor(248, 249, 250);
+                pdf.rect(20, y, 170, 25, 'F');
+                
+                pdf.setFontSize(10);
+                pdf.text('Invoice No: INV-202512-001', 25, y + 7);
+                pdf.text('Date: 2025-12-10', 25, y + 13);
+                pdf.text('Customer: Test Company', 25, y + 19);
+                
+                y += 30;
+                
+                // Table
+                log('繪製表格...', 'info');
+                pdf.setFillColor(102, 126, 234);
+                pdf.rect(20, y, 170, 8, 'F');
+                
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(10);
+                pdf.text('Description', 25, y + 5.5);
+                pdf.text('Amount', 160, y + 5.5, { align: 'right' });
+                
+                y += 8;
+                pdf.setTextColor(0, 0, 0);
+                
+                // Items
+                const items = [
+                    { desc: 'Item 1', amount: 1000 },
+                    { desc: 'Item 2', amount: 2000 },
+                    { desc: 'Item 3', amount: 3000 }
+                ];
+                
+                items.forEach((item, index) => {
+                    if (index % 2 === 0) {
+                        pdf.setFillColor(250, 250, 250);
+                        pdf.rect(20, y, 170, 10, 'F');
+                    }
+                    pdf.text(item.desc, 25, y + 6);
+                    pdf.text(`HK$${item.amount.toFixed(2)}`, 185, y + 6, { align: 'right' });
+                    y += 10;
+                });
+                
+                // Total
+                log('繪製總計...', 'info');
+                y += 5;
+                pdf.setFontSize(14);
+                pdf.setTextColor(102, 126, 234);
+                pdf.text('Total Amount:', 130, y);
+                pdf.text('HK$6,000.00', 185, y, { align: 'right' });
+                
+                pdf.save('test-full.pdf');
+                log('✅ 完整 PDF 生成成功！', 'success');
+            } catch (error) {
+                log(`❌ 錯誤: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        log('PDF 調試工具已就緒', 'success');
+    </script>
+</body>
+</html>

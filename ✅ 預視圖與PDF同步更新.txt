@@ -1,0 +1,207 @@
+✅ 預視圖與 PDF 同步更新說明
+================================
+
+## 問題描述
+
+之前預視圖中的排版和實際生成的 PDF 不一致：
+- 預視圖使用像素（px）定位
+- PDF 生成使用固定的毫米（mm）定位
+- PDF 生成不讀取排版控制器保存的位置
+
+## 解決方案
+
+已完全重寫 `drawPDFContent()` 函數，使其：
+1. **讀取排版控制器保存的位置**
+2. **將像素座標轉換為毫米座標**
+3. **按照預視圖的排版生成 PDF**
+
+## 技術實現
+
+### 1. 座標轉換系統
+
+```javascript
+// PDF 預覽器尺寸（px）
+const pdfWidth = 595;   // 寬度
+const pdfHeight = 842;  // 高度
+
+// A4 紙張尺寸（mm）
+const pageWidth = 210;  // 寬度
+const pageHeight = 297; // 高度
+
+// 像素轉毫米的轉換函數
+const pxToMm = (px) => (px / pdfWidth) * pageWidth;
+const pyToMm = (py) => (py / pdfHeight) * pageHeight;
+```
+
+### 2. 讀取保存的位置
+
+```javascript
+// 從 localStorage 載入元件位置
+const positions = this.loadElementPositions();
+
+// positions 結構示例：
+{
+  "logo": { left: 40, top: 40, width: 150, height: 75 },
+  "company-info": { left: 345, top: 40 },
+  "title": { left: 297, top: 150 },
+  "invoice-info": { left: 40, top: 210 },
+  "customer-info": { left: 375, top: 210 },
+  "customer-detail": { left: 40, top: 280 },
+  "items-table": { left: 40, top: 380 },
+  "total": { left: 345, top: 480 },
+  "notes": { left: 40, top: 762 }
+}
+```
+
+### 3. 應用到 PDF 生成
+
+每個元件都使用保存的位置：
+
+```javascript
+// Logo
+const logoPos = positions.logo || { left: 40, top: 40, width: 150, height: 75 };
+const logoX = pxToMm(logoPos.left);
+const logoY = pyToMm(logoPos.top);
+const logoW = pxToMm(logoPos.width);
+const logoH = pyToMm(logoPos.height);
+
+pdf.addImage(company.logo_url, 'PNG', logoX, logoY, logoW, logoH);
+```
+
+### 4. 右對齊元件處理
+
+對於右對齊的元件（公司信息、客戶信息、總計），需要特殊處理：
+
+```javascript
+// 如果元件位置在頁面右側（> 50%）
+if (companyPos.left > pdfWidth / 2) {
+    // 從右邊計算距離
+    companyX = pageWidth - pxToMm(pdfWidth - companyPos.left);
+}
+```
+
+## 支援的元件
+
+以下元件的位置都會同步到 PDF：
+
+1. **Logo** - 左上角公司 Logo（支援自定義尺寸）
+2. **公司信息** - 右上角公司資料
+3. **標題** - 中央的"報價單"標題
+4. **發票信息** - 左側發票編號和日期
+5. **客戶信息** - 右側客戶名稱和到期日
+6. **客戶詳細** - 左側客戶詳細資料框
+7. **項目表格** - 中央項目表格
+8. **總計** - 右下角總計框
+9. **備註** - 左下角備註
+
+## 使用流程
+
+1. **打開排版控制器**
+   ```
+   點擊 "🎨 PDF 排版控制器"
+   ```
+
+2. **調整元件位置**
+   ```
+   拖動各個元件到想要的位置
+   調整 Logo 大小（保持原生比例）
+   ```
+
+3. **儲存設定**
+   ```
+   點擊 "💾 儲存設定與位置"
+   位置保存到 localStorage
+   ```
+
+4. **生成 PDF**
+   ```
+   回到單據管理
+   點擊任意單據的 "📄" 下載按鈕
+   生成的 PDF 會使用自定義的排版
+   ```
+
+## 優點
+
+✅ **所見即所得** - 預視圖和 PDF 完全一致
+✅ **自動同步** - 無需手動調整 PDF 座標
+✅ **靈活排版** - 可隨意調整元件位置
+✅ **保持比例** - Logo 使用原生比例，不變形
+✅ **右對齊支援** - 正確處理右對齊元件
+✅ **降級機制** - 如果沒有保存位置，使用預設排版
+
+## 控制台輸出
+
+生成 PDF 時會輸出：
+
+```
+開始繪製 PDF，資料: { doc, contact, itemsCount, company }
+使用自定義位置: { logo: {...}, title: {...}, ... }
+✅ Logo 已添加於自定義位置: { x: 7.06, y: 14.21, w: 26.47, h: 13.24 }
+```
+
+## 測試建議
+
+1. **調整預視圖**
+   - 打開排版控制器
+   - 拖動 Logo 到不同位置
+   - 調整 Logo 大小
+   - 儲存設定
+
+2. **生成 PDF**
+   - 找一個已有的報價單/發票
+   - 點擊下載 PDF
+   - 檢查 PDF 中的 Logo 位置和大小
+
+3. **比較預視圖和 PDF**
+   - 元件位置應該一致
+   - Logo 比例應該相同
+   - 文字對齊應該正確
+
+## 文件修改
+
+- `documents.js`
+  - 完全重寫 `drawPDFContent()` 函數
+  - 新增 `loadElementPositions()` 函數
+  - 添加像素到毫米的轉換邏輯
+  - 修改所有元件的繪製方式
+
+## 注意事項
+
+1. **位置保存**
+   - 位置保存在瀏覽器的 localStorage 中
+   - 清除瀏覽器資料會重置位置
+   - 不同電腦/瀏覽器需要重新調整
+
+2. **座標系統**
+   - 預視圖：左上角為原點（0, 0）
+   - PDF：左上角為原點（0, 0）
+   - Y 軸向下增加
+
+3. **右對齊元件**
+   - 公司信息、客戶信息、總計等元件
+   - 使用 `align: 'right'` 參數
+   - X 座標從頁面右側計算
+
+4. **表格寬度**
+   - 表格寬度自動填滿頁面
+   - 左右邊距自動調整
+   - 欄位比例保持一致
+
+## 已知限制
+
+1. 暫不支援多頁 PDF 的元件位置調整
+2. 表格高度自動計算，無法手動調整
+3. 分隔線位置固定（可根據需要添加）
+
+## 後續優化建議
+
+- [ ] 添加分隔線位置調整
+- [ ] 支援頁腳位置調整
+- [ ] 添加元件尺寸調整（除 Logo 外）
+- [ ] 支援元件顯示/隱藏切換
+- [ ] 添加排版模板功能
+
+---
+
+更新時間：2025-12-10
+版本：v2.0

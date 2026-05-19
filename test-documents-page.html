@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>測試單據管理頁面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 單據管理頁面診斷工具</h1>
+    
+    <div class="test-section">
+        <h2>測試步驟：</h2>
+        <button onclick="runAllTests()">執行所有測試</button>
+        <button onclick="testScriptsLoaded()">1. 檢查腳本加載</button>
+        <button onclick="testDatabaseConnection()">2. 檢查資料庫連接</button>
+        <button onclick="testDocumentManager()">3. 檢查 DocumentManager</button>
+        <button onclick="testRenderMethod()">4. 測試渲染方法</button>
+    </div>
+
+    <div id="results">
+        <p>點擊上方按鈕開始測試...</p>
+    </div>
+
+    <!-- 加載必要的腳本 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <script src="documents.js"></script>
+
+    <script>
+        // 初始化 Supabase
+        window.supabase = window.supabase.createClient(
+            CONFIG.SUPABASE.URL,
+            CONFIG.SUPABASE.ANON_KEY
+        );
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : '';
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+            results.innerHTML += `<p class="${className}">${icon} ${message}</p>`;
+        }
+
+        function clearLog() {
+            document.getElementById('results').innerHTML = '<h3>測試結果：</h3>';
+        }
+
+        async function runAllTests() {
+            clearLog();
+            log('開始執行所有測試...', 'info');
+            await testScriptsLoaded();
+            await testDatabaseConnection();
+            await testDocumentManager();
+            await testRenderMethod();
+            log('所有測試完成！', 'success');
+        }
+
+        function testScriptsLoaded() {
+            clearLog();
+            log('檢查腳本加載狀態...', 'info');
+            
+            // 檢查 Supabase
+            if (typeof window.supabase !== 'undefined') {
+                log('Supabase 已加載', 'success');
+            } else {
+                log('Supabase 未加載', 'error');
+            }
+
+            // 檢查 jsPDF
+            if (typeof jspdf !== 'undefined' || typeof window.jspdf !== 'undefined') {
+                log('jsPDF 已加載', 'success');
+            } else {
+                log('jsPDF 未加載', 'error');
+            }
+
+            // 檢查 CONFIG
+            if (typeof CONFIG !== 'undefined') {
+                log('CONFIG 已加載', 'success');
+                log(`Supabase URL: ${CONFIG.SUPABASE.URL}`, 'info');
+            } else {
+                log('CONFIG 未加載', 'error');
+            }
+
+            // 檢查 db
+            if (typeof db !== 'undefined') {
+                log('Database (db) 已加載', 'success');
+            } else {
+                log('Database (db) 未加載', 'error');
+            }
+
+            // 檢查 documentManager
+            if (typeof documentManager !== 'undefined') {
+                log('documentManager 已加載', 'success');
+            } else {
+                log('documentManager 未加載', 'error');
+            }
+        }
+
+        async function testDatabaseConnection() {
+            clearLog();
+            log('測試資料庫連接...', 'info');
+            
+            try {
+                const { data, error } = await window.supabase
+                    .from('documents')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    log(`資料庫連接失敗: ${error.message}`, 'error');
+                } else {
+                    log('資料庫連接成功', 'success');
+                }
+            } catch (err) {
+                log(`資料庫測試出錯: ${err.message}`, 'error');
+            }
+        }
+
+        async function testDocumentManager() {
+            clearLog();
+            log('檢查 DocumentManager 實例...', 'info');
+            
+            if (typeof documentManager === 'undefined') {
+                log('documentManager 未定義', 'error');
+                return;
+            }
+
+            log('documentManager 已定義', 'success');
+            log(`currentView: ${documentManager.currentView}`, 'info');
+            log(`currentFilter: ${documentManager.currentFilter}`, 'info');
+
+            // 檢查方法
+            if (typeof documentManager.render === 'function') {
+                log('render 方法存在', 'success');
+            } else {
+                log('render 方法不存在', 'error');
+            }
+
+            if (typeof documentManager.loadDocumentsList === 'function') {
+                log('loadDocumentsList 方法存在', 'success');
+            } else {
+                log('loadDocumentsList 方法不存在', 'error');
+            }
+        }
+
+        async function testRenderMethod() {
+            clearLog();
+            log('測試渲染方法...', 'info');
+            
+            // 創建測試容器
+            const testContainer = document.createElement('div');
+            testContainer.id = 'mainContent';
+            testContainer.style.display = 'none';
+            document.body.appendChild(testContainer);
+            
+            try {
+                log('調用 documentManager.render()...', 'info');
+                await documentManager.render();
+                
+                if (testContainer.innerHTML.length > 0) {
+                    log('渲染成功！HTML 已生成', 'success');
+                    log(`生成的 HTML 長度: ${testContainer.innerHTML.length} 字符`, 'info');
+                } else {
+                    log('渲染失敗：未生成 HTML', 'error');
+                }
+            } catch (err) {
+                log(`渲染出錯: ${err.message}`, 'error');
+                log(`錯誤堆疊: ${err.stack}`, 'error');
+            } finally {
+                // 清理測試容器
+                document.body.removeChild(testContainer);
+            }
+        }
+    </script>
+</body>
+</html>

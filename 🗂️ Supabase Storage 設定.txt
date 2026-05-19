@@ -1,0 +1,162 @@
+🗂️ Supabase Storage 設定指南
+==============================
+
+⚠️ 重要：為什麼需要設定 Storage？
+--------------------------------
+如果 Logo 使用 Base64 儲存在資料庫：
+❌ PDF 檔案會從 300KB 暴增到 9MB+
+❌ 下載速度慢
+❌ 佔用大量儲存空間
+
+使用 Supabase Storage：
+✅ PDF 檔案維持正常大小（~300KB）
+✅ Logo 儲存在雲端
+✅ 快速載入
+✅ 節省資料庫空間
+
+📋 設定步驟
+-----------
+
+### 第一步：登入 Supabase Dashboard
+1. 前往 https://supabase.com
+2. 登入您的帳號
+3. 選擇您的專案
+
+### 第二步：創建 Storage Bucket
+1. 點擊左側選單「Storage」
+2. 點擊「New bucket」
+3. 填寫資料：
+   - Name: `company-assets`
+   - Public bucket: ✅ 勾選（讓 Logo 可公開訪問）
+   - File size limit: `2097152` (2MB)
+4. 點擊「Create bucket」
+
+### 第三步：設定存取權限
+1. 在 Buckets 列表中找到 `company-assets`
+2. 點擊右側「...」→「Edit bucket」
+3. 確認「Public bucket」已勾選
+4. 點擊「Policies」標籤
+5. 點擊「New Policy」
+6. 選擇「For full customization」
+
+**插入以下 Policy：**
+
+```sql
+-- 允許所有人讀取
+CREATE POLICY "Public Access"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'company-assets' );
+
+-- 允許已驗證用戶上傳
+CREATE POLICY "Authenticated users can upload"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'company-assets' 
+  AND auth.role() = 'authenticated'
+);
+
+-- 允許已驗證用戶刪除自己的檔案
+CREATE POLICY "Users can delete own files"
+ON storage.objects FOR DELETE
+USING (
+  bucket_id = 'company-assets' 
+  AND auth.role() = 'authenticated'
+);
+```
+
+### 第四步：驗證設定
+1. 返回系統「設定」頁面
+2. 上傳 Logo
+3. 如果成功，會顯示「✅ Logo 上傳成功！」
+4. 查看 Supabase Storage，應該能看到上傳的檔案
+
+🔧 簡易設定（如果上述太複雜）
+----------------------------
+
+系統已內建**自動創建功能**：
+
+1. 直接在「設定」頁面上傳 Logo
+2. 系統會自動嘗試創建 `company-assets` bucket
+3. 如果失敗，會自動降級使用壓縮的 Base64
+4. 第一次上傳可能需要稍等片刻
+
+⚠️ 如果看到警告訊息：
+「⚠️ 已使用本地儲存（建議設定 Supabase Storage）」
+
+表示自動創建失敗，需要手動在 Supabase 設定 Storage。
+
+📊 檔案大小對比
+--------------
+
+**未設定 Storage（使用 Base64）：**
+- 資料庫記錄：~2-3MB
+- 生成的 PDF：~9MB
+- 總儲存空間：~11-12MB per 單據
+
+**已設定 Storage（使用 URL）：**
+- 資料庫記錄：~5KB
+- Logo 檔案：~100KB（一次儲存）
+- 生成的 PDF：~300KB
+- 總儲存空間：~400KB per 單據
+
+💡 儲存空間節省：**96%** 🎉
+
+🔍 檢查是否已正確設定
+--------------------
+
+**方法 1：檢查 PDF 檔案大小**
+- 生成一個 PDF
+- 檢查檔案大小
+- 如果 < 500KB = ✅ 正確
+- 如果 > 5MB = ❌ 需要設定 Storage
+
+**方法 2：檢查資料庫**
+1. 前往 Supabase → Table Editor → companies
+2. 查看 `logo_url` 欄位
+3. 如果是 URL 開頭 `https://...` = ✅ 正確
+4. 如果是 `data:image/...` = ❌ 使用 Base64
+
+**方法 3：檢查 Storage**
+1. 前往 Supabase → Storage
+2. 開啟 `company-assets` bucket
+3. 應該能看到上傳的 Logo 檔案
+
+🚨 常見問題
+-----------
+
+**Q: 上傳失敗怎麼辦？**
+A: 
+1. 確認已創建 `company-assets` bucket
+2. 確認 bucket 設為 Public
+3. 確認已設定 Policies
+4. 檢查圖片是否小於 2MB
+
+**Q: 可以不設定 Storage 嗎？**
+A: 可以，但：
+- PDF 會非常大（9MB+）
+- 下載速度慢
+- 浪費儲存空間
+- 強烈建議設定
+
+**Q: 已經上傳的 Base64 Logo 怎麼辦？**
+A: 
+1. 設定好 Storage
+2. 重新上傳一次 Logo
+3. 系統會自動使用新方式
+4. 舊的 Base64 會被覆蓋
+
+**Q: Storage 有免費額度嗎？**
+A: Supabase 免費方案包含：
+- 1GB Storage 空間
+- 2GB 流量/月
+- 足夠儲存數千個 Logo
+
+✅ 完成！
+--------
+設定完成後：
+- Logo 儲存在雲端
+- PDF 檔案大小正常
+- 系統運作更順暢
+- 節省 96% 儲存空間
+
+建議：設定完成後，重新上傳一次 Logo 以啟用新的儲存方式。

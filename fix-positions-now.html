@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>🔧 立即修復位置</title>
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        #status {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .loading { background: #e3f2fd; color: #1976d2; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔧 立即修復 PDF 位置</h1>
+        <p style="color: #666; margin-bottom: 30px;">
+            點擊下方按鈕,立即將 PDF 元件位置重置為正確值
+        </p>
+        
+        <button onclick="fixNow()" style="font-size: 24px;">
+            ⚡ 立即修復
+        </button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // 使用原始位置值，底部對齊算法會自動計算
+        const CORRECT_POSITIONS = {
+            'logo': { left: 40, top: 40, width: 150, height: 90 },           // 算法會自動調整 top
+            'company-info': { left: 555, top: 40, width: 250, height: 100 },  // 算法會自動調整 top
+            'title': { left: 307.5, top: 110, width: 100, height: 25 },       // 算法會自動調整 top
+            'separator-line': { left: 40, top: 140, width: 515, height: 2 },  // 藍色分隔線（對齊基準）
+            'invoice-info': { left: 40, top: 148, width: 200, height: 60 },   // 藍線下方 8px
+            'customer-info': { left: 555, top: 148, width: 220, height: 60 }, // 藍線下方 8px，右對齊
+            'customer-detail': { left: 40, top: 220, width: 250, height: 80 },
+            'items-table': { left: 40, top: 320, width: 515, height: 200 },
+            'total': { left: 555, top: 420, width: 250, height: 100 },
+            'notes': { left: 40, top: 752, width: 300, height: 60 }
+        };
+
+        async function fixNow() {
+            const status = document.getElementById('status');
+            const btn = event.target;
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '⏳ 修復中...';
+                
+                status.className = 'loading';
+                status.innerHTML = '🔄 正在保存正確位置到 Supabase...';
+                
+                console.log('保存位置:', CORRECT_POSITIONS);
+                await db.savePDFElementPositions(CORRECT_POSITIONS);
+                
+                status.className = 'success';
+                status.innerHTML = `
+                    <h2>✅ 修復成功!</h2>
+                    <p>已成功將 ${Object.keys(CORRECT_POSITIONS).length} 個元件位置重置為正確值。</p>
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #c3e6cb;">
+                    <p><strong>下一步:</strong></p>
+                    <ol style="text-align: left; padding-left: 20px;">
+                        <li>返回主系統 (index-new.html)</li>
+                        <li>強制刷新: <strong>Cmd + Shift + R</strong></li>
+                        <li>生成一個 PDF 測試</li>
+                    </ol>
+                `;
+                
+                btn.textContent = '✅ 完成!';
+                btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                
+            } catch (error) {
+                console.error('修復失敗:', error);
+                status.className = 'error';
+                status.innerHTML = `
+                    <h2>❌ 修復失敗</h2>
+                    <p>${error.message}</p>
+                    <p>請檢查 Console 查看詳細錯誤訊息。</p>
+                `;
+                btn.disabled = false;
+                btn.textContent = '🔄 重試';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>簡單 PDF 測試</title>
+</head>
+<body>
+    <h1>簡單 PDF 測試</h1>
+    <button onclick="test1()">測試 1: 最基本</button>
+    <button onclick="test2()">測試 2: 多行文字</button>
+    <button onclick="test3()">測試 3: 繪製矩形</button>
+    <button onclick="test4()">測試 4: 模擬發票</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        function test1() {
+            console.log('Test 1: 開始');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            pdf.text('Hello World', 10, 10);
+            pdf.save('test1.pdf');
+            console.log('Test 1: 完成');
+            alert('Test 1 完成！請檢查下載的 PDF');
+        }
+
+        function test2() {
+            console.log('Test 2: 開始');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            pdf.setFontSize(20);
+            pdf.text('Title', 105, 20, { align: 'center' });
+            
+            pdf.setFontSize(12);
+            pdf.text('Line 1', 20, 40);
+            pdf.text('Line 2', 20, 50);
+            pdf.text('Line 3', 20, 60);
+            
+            pdf.save('test2.pdf');
+            console.log('Test 2: 完成');
+            alert('Test 2 完成！請檢查下載的 PDF');
+        }
+
+        function test3() {
+            console.log('Test 3: 開始');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            // 繪製矩形
+            pdf.setFillColor(100, 126, 234);
+            pdf.rect(20, 20, 170, 10, 'F');
+            
+            // 白色文字
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Header', 25, 27);
+            
+            // 黑色文字
+            pdf.setTextColor(0, 0, 0);
+            pdf.text('Content', 20, 40);
+            
+            pdf.save('test3.pdf');
+            console.log('Test 3: 完成');
+            alert('Test 3 完成！請檢查下載的 PDF');
+        }
+
+        function test4() {
+            console.log('Test 4: 開始 - 模擬發票');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            const pageWidth = 210;
+            const margin = 20;
+            let y = margin;
+            
+            console.log('繪製標題');
+            pdf.setFontSize(24);
+            pdf.text('INVOICE', pageWidth / 2, y, { align: 'center' });
+            y += 15;
+            
+            console.log('繪製分隔線');
+            pdf.setDrawColor(102, 126, 234);
+            pdf.setLineWidth(0.8);
+            pdf.line(margin, y, pageWidth - margin, y);
+            y += 10;
+            
+            console.log('繪製資訊框');
+            pdf.setFillColor(248, 249, 250);
+            pdf.rect(margin, y, pageWidth - margin * 2, 25, 'F');
+            
+            pdf.setFontSize(10);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text('Invoice No: INV-001', margin + 5, y + 7);
+            pdf.text('Date: 2025-12-10', margin + 5, y + 13);
+            
+            y += 30;
+            
+            console.log('繪製表格標題');
+            pdf.setFillColor(102, 126, 234);
+            pdf.rect(margin, y, pageWidth - margin * 2, 8, 'F');
+            
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Description', margin + 5, y + 5.5);
+            pdf.text('Amount', pageWidth - margin - 5, y + 5.5, { align: 'right' });
+            
+            y += 8;
+            pdf.setTextColor(0, 0, 0);
+            
+            console.log('繪製項目');
+            pdf.text('Test Item 1', margin + 5, y + 6);
+            pdf.text('HK$1,000.00', pageWidth - margin - 5, y + 6, { align: 'right' });
+            y += 10;
+            
+            pdf.text('Test Item 2', margin + 5, y + 6);
+            pdf.text('HK$2,000.00', pageWidth - margin - 5, y + 6, { align: 'right' });
+            y += 15;
+            
+            console.log('繪製總計');
+            pdf.setFontSize(14);
+            pdf.text('Total:', pageWidth - margin - 60, y);
+            pdf.text('HK$3,000.00', pageWidth - margin - 5, y, { align: 'right' });
+            
+            console.log('準備保存');
+            pdf.save('test4-invoice.pdf');
+            console.log('Test 4: 完成');
+            alert('Test 4 完成！請檢查下載的 PDF');
+        }
+    </script>
+</body>
+</html>

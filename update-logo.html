@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>更新 Logo URL</title>
+</head>
+<body>
+    <h1>更新 Logo URL</h1>
+    <button onclick="updateLogo()">更新 Logo 為 Supabase URL</button>
+    <div id="result"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script>
+        const supabase = window.supabase.createClient(
+            CONFIG.SUPABASE.URL,
+            CONFIG.SUPABASE.ANON_KEY
+        );
+
+        async function updateLogo() {
+            try {
+                const newLogoUrl = 'https://fcydqlusmtpgmwvfnopm.supabase.co/storage/v1/object/public/company-assets/test-logo-1765377503405.png';
+                
+                const { data, error } = await supabase
+                    .from('companies')
+                    .update({ 
+                        logo_url: newLogoUrl,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('name', 'Muselabs Engineering Limited')
+                    .select();
+                
+                if (error) throw error;
+                
+                document.getElementById('result').innerHTML = '<p style="color: green;">✅ Logo URL 已更新！</p>';
+                console.log('更新結果:', data);
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ 更新失敗: ' + error.message + '</p>';
+                console.error('更新失敗:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PDF 佈局測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .col {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .preview {
+            width: 595px;
+            height: 842px;
+            border: 2px solid #ddd;
+            position: relative;
+            background: white;
+            transform-origin: top left;
+        }
+        .pdf-preview {
+            border: 2px solid #4CAF50;
+        }
+        .scale-50 {
+            transform: scale(0.5);
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        .element-box {
+            position: absolute;
+            border: 2px dashed red;
+            background: rgba(255, 0, 0, 0.05);
+            font-size: 10px;
+            padding: 2px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 PDF 佈局測試工具</h1>
+        
+        <div style="margin-bottom: 20px;">
+            <button onclick="loadData()">📥 載入數據</button>
+            <button onclick="generateTestPDF()">📄 生成測試 PDF</button>
+            <button onclick="showGrid()">📐 顯示網格</button>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="info">
+                    <strong>預覽器</strong><br>
+                    尺寸: 595×842 px<br>
+                    比例: 1:1<br>
+                    來源: localStorage
+                </div>
+                <div id="preview-container" class="preview scale-50">
+                    <!-- 預覽內容 -->
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="info">
+                    <strong>PDF 模擬</strong><br>
+                    尺寸: 210×297 mm (A4)<br>
+                    轉換: px → mm<br>
+                    比例: 595px = 210mm
+                </div>
+                <div id="pdf-container" class="preview pdf-preview scale-50">
+                    <!-- PDF 內容 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <h3>📊 位置數據 (Pixels)</h3>
+                <pre id="positions-data"></pre>
+            </div>
+            <div class="col">
+                <h3>🔄 轉換數據 (Millimeters)</h3>
+                <pre id="conversion-data"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        const pdfWidth = 595;
+        const pdfHeight = 842;
+        const pageWidth = 210;
+        const pageHeight = 297;
+
+        const pxToMm = (px) => (px / pdfWidth) * pageWidth;
+        const pyToMm = (py) => (py / pdfHeight) * pageHeight;
+
+        function loadData() {
+            try {
+                const saved = localStorage.getItem('pdfElementPositions');
+                if (!saved) {
+                    alert('沒有保存的位置數據！請先打開 PDF 排版控制器。');
+                    return;
+                }
+
+                const positions = JSON.parse(saved);
+                
+                // 顯示位置數據
+                document.getElementById('positions-data').textContent = JSON.stringify(positions, null, 2);
+
+                // 顯示轉換數據
+                let conversion = '';
+                Object.keys(positions).forEach(key => {
+                    const pos = positions[key];
+                    conversion += `${key}:\n`;
+                    conversion += `  px: (${pos.left}, ${pos.top})`;
+                    if (pos.width) conversion += ` ${pos.width}×${pos.height}`;
+                    conversion += '\n';
+                    conversion += `  mm: (${pxToMm(pos.left).toFixed(2)}, ${pyToMm(pos.top).toFixed(2)})`;
+                    if (pos.width) conversion += ` ${pxToMm(pos.width).toFixed(2)}×${pyToMm(pos.height).toFixed(2)}`;
+                    conversion += '\n\n';
+                });
+                document.getElementById('conversion-data').textContent = conversion;
+
+                // 繪製預覽
+                drawPreview(positions);
+                drawPDFSimulation(positions);
+
+                alert('✅ 數據已載入');
+            } catch (e) {
+                alert('❌ 載入失敗：' + e.message);
+                console.error(e);
+            }
+        }
+
+        function drawPreview(positions) {
+            const container = document.getElementById('preview-container');
+            container.innerHTML = '';
+
+            Object.keys(positions).forEach(key => {
+                const pos = positions[key];
+                const box = document.createElement('div');
+                box.className = 'element-box';
+                box.style.left = pos.left + 'px';
+                box.style.top = pos.top + 'px';
+                box.style.width = (pos.width || 100) + 'px';
+                box.style.height = (pos.height || 30) + 'px';
+                box.innerHTML = `${key}<br>${pos.left},${pos.top}`;
+                container.appendChild(box);
+            });
+        }
+
+        function drawPDFSimulation(positions) {
+            const container = document.getElementById('pdf-container');
+            container.innerHTML = '';
+
+            // 模擬 PDF 座標（按比例縮放到 px）
+            const mmToPx = (mm) => (mm / pageWidth) * pdfWidth;
+
+            Object.keys(positions).forEach(key => {
+                const pos = positions[key];
+                
+                // 轉換為 mm，再轉回 px（模擬 PDF 渲染）
+                const mmX = pxToMm(pos.left);
+                const mmY = pyToMm(pos.top);
+                const mmW = pos.width ? pxToMm(pos.width) : pxToMm(100);
+                const mmH = pos.height ? pyToMm(pos.height) : pyToMm(30);
+
+                const pxX = mmToPx(mmX);
+                const pxY = mmToPx(mmY);
+                const pxW = mmToPx(mmW);
+                const pxH = mmToPx(mmH);
+
+                const box = document.createElement('div');
+                box.className = 'element-box';
+                box.style.left = pxX + 'px';
+                box.style.top = pxY + 'px';
+                box.style.width = pxW + 'px';
+                box.style.height = pxH + 'px';
+                box.style.borderColor = '#4CAF50';
+                box.innerHTML = `${key}<br>${mmX.toFixed(1)},${mmY.toFixed(1)}mm`;
+                container.appendChild(box);
+            });
+        }
+
+        function showGrid() {
+            alert('網格功能開發中...');
+        }
+
+        async function generateTestPDF() {
+            try {
+                const saved = localStorage.getItem('pdfElementPositions');
+                if (!saved) {
+                    alert('沒有保存的位置數據！');
+                    return;
+                }
+
+                const positions = JSON.parse(saved);
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+
+                // 繪製網格（用於調試）
+                pdf.setDrawColor(200, 200, 200);
+                pdf.setLineWidth(0.1);
+                
+                // 垂直線（每 10mm）
+                for (let x = 0; x <= 210; x += 10) {
+                    pdf.line(x, 0, x, 297);
+                }
+                
+                // 水平線（每 10mm）
+                for (let y = 0; y <= 297; y += 10) {
+                    pdf.line(0, y, 210, y);
+                }
+
+                // 繪製元件框
+                pdf.setDrawColor(255, 0, 0);
+                pdf.setLineWidth(0.5);
+                pdf.setFontSize(8);
+
+                Object.keys(positions).forEach(key => {
+                    const pos = positions[key];
+                    const x = pxToMm(pos.left);
+                    const y = pyToMm(pos.top);
+                    const w = pos.width ? pxToMm(pos.width) : 30;
+                    const h = pos.height ? pyToMm(pos.height) : 10;
+
+                    pdf.rect(x, y, w, h);
+                    pdf.text(`${key} (${x.toFixed(1)},${y.toFixed(1)})`, x + 1, y + 4);
+                });
+
+                // 標註尺寸
+                pdf.setTextColor(100, 100, 100);
+                pdf.setFontSize(10);
+                pdf.text('595px = 210mm', 10, 10);
+                pdf.text('842px = 297mm', 10, 15);
+
+                pdf.save('layout-test.pdf');
+                alert('✅ 測試 PDF 已生成！\n請檢查下載的檔案。');
+            } catch (e) {
+                alert('❌ 生成失敗：' + e.message);
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>

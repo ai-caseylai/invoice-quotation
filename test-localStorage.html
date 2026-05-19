@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>🔍 localStorage 測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 600px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 localStorage 診斷工具</h1>
+    
+    <div class="box">
+        <h2>當前頁面信息</h2>
+        <div id="pageInfo"></div>
+    </div>
+
+    <div class="box">
+        <h2>操作</h2>
+        <button onclick="checkLocalStorage()">📊 檢查 localStorage</button>
+        <button onclick="testWrite()">✍️ 測試寫入</button>
+        <button onclick="testRead()">📖 測試讀取</button>
+        <button onclick="clearStorage()">🗑️ 清除</button>
+        <div id="status"></div>
+    </div>
+
+    <div class="box">
+        <h2>pdfElementPositions 內容</h2>
+        <pre id="positions"></pre>
+    </div>
+
+    <div class="box">
+        <h2>所有 localStorage keys</h2>
+        <pre id="allKeys"></pre>
+    </div>
+
+    <script>
+        // 顯示頁面信息
+        function updatePageInfo() {
+            const info = document.getElementById('pageInfo');
+            info.innerHTML = `
+                <p><strong>URL:</strong> ${window.location.href}</p>
+                <p><strong>Protocol:</strong> ${window.location.protocol}</p>
+                <p><strong>Host:</strong> ${window.location.host}</p>
+                <p><strong>Pathname:</strong> ${window.location.pathname}</p>
+            `;
+        }
+
+        // 檢查 localStorage
+        function checkLocalStorage() {
+            try {
+                const key = 'pdfElementPositions';
+                const value = localStorage.getItem(key);
+                
+                const positionsEl = document.getElementById('positions');
+                const statusEl = document.getElementById('status');
+                
+                if (value) {
+                    const parsed = JSON.parse(value);
+                    positionsEl.textContent = JSON.stringify(parsed, null, 2);
+                    
+                    statusEl.innerHTML = `
+                        <div class="status success">
+                            ✅ 找到 pdfElementPositions<br>
+                            元件數量: ${Object.keys(parsed).length}<br>
+                            元件列表: ${Object.keys(parsed).join(', ')}
+                        </div>
+                    `;
+                } else {
+                    positionsEl.textContent = '沒有資料';
+                    statusEl.innerHTML = `
+                        <div class="status error">
+                            ❌ localStorage 中沒有 pdfElementPositions
+                        </div>
+                    `;
+                }
+                
+                showAllKeys();
+            } catch (e) {
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `
+                    <div class="status error">
+                        ❌ 錯誤: ${e.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 測試寫入
+        function testWrite() {
+            try {
+                const testData = {
+                    test: {
+                        left: 100,
+                        top: 200,
+                        width: 300,
+                        height: 400
+                    }
+                };
+                
+                localStorage.setItem('pdfElementPositions_test', JSON.stringify(testData));
+                
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `
+                    <div class="status success">
+                        ✅ 測試寫入成功！<br>
+                        已寫入 key: pdfElementPositions_test
+                    </div>
+                `;
+                
+                showAllKeys();
+            } catch (e) {
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `
+                    <div class="status error">
+                        ❌ 寫入失敗: ${e.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 測試讀取
+        function testRead() {
+            try {
+                const value = localStorage.getItem('pdfElementPositions_test');
+                const statusEl = document.getElementById('status');
+                
+                if (value) {
+                    const parsed = JSON.parse(value);
+                    statusEl.innerHTML = `
+                        <div class="status success">
+                            ✅ 測試讀取成功！<br>
+                            內容: ${JSON.stringify(parsed)}
+                        </div>
+                    `;
+                } else {
+                    statusEl.innerHTML = `
+                        <div class="status warning">
+                            ⚠️ 找不到測試數據<br>
+                            請先執行「測試寫入」
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `
+                    <div class="status error">
+                        ❌ 讀取失敗: ${e.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 顯示所有 keys
+        function showAllKeys() {
+            const allKeysEl = document.getElementById('allKeys');
+            const keys = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                const preview = value.length > 100 ? value.substring(0, 100) + '...' : value;
+                keys.push(`${key}:\n  ${preview}\n`);
+            }
+            
+            allKeysEl.textContent = keys.length > 0 
+                ? `共 ${keys.length} 個 keys:\n\n${keys.join('\n')}`
+                : '沒有任何 localStorage 數據';
+        }
+
+        // 清除
+        function clearStorage() {
+            if (confirm('確定要清除 localStorage 中的 pdfElementPositions 嗎？')) {
+                localStorage.removeItem('pdfElementPositions');
+                localStorage.removeItem('pdfElementPositions_test');
+                
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `
+                    <div class="status success">
+                        ✅ 已清除 pdfElementPositions
+                    </div>
+                `;
+                
+                checkLocalStorage();
+            }
+        }
+
+        // 初始化
+        updatePageInfo();
+        checkLocalStorage();
+    </script>
+</body>
+</html>

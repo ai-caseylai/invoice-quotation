@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>📐 移動標題到頂部</title>
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .preview {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .layout-option {
+            background: white;
+            border: 2px solid #e0e7ff;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .layout-option:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+        .layout-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .layout-diagram {
+            font-family: monospace;
+            background: #1a1a2e;
+            color: #0ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre;
+            font-size: 11px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 10px 5px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+        .success { background: #d4edda; color: #155724; display: block; }
+        .error { background: #f8d7da; color: #721c24; display: block; }
+        .info { background: #d1ecf1; color: #0c5460; display: block; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📐 移動標題到頂部</h1>
+        <p class="subtitle">選擇佈局方案，將"報價單"標題與 Logo 放在同一行</p>
+
+        <div class="preview">
+            <h3 style="margin-top: 0;">🎯 選擇佈局方案</h3>
+            
+            <div class="layout-option" data-layout="center" onclick="selectLayout('center')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>方案 1: 三欄居中佈局</strong> <span style="color: #10b981;">✓ 推薦</span>
+                        <div style="color: #666; font-size: 14px; margin-top: 5px;">
+                            Logo 左側，標題居中，公司資訊右側
+                        </div>
+                    </div>
+                    <input type="radio" name="layout" value="center" checked>
+                </div>
+                <div class="layout-diagram">┌────────────────────────────────────┐
+│ [Logo]      報價單      [公司資訊]  │
+│  左側        中間          右側      │
+│                                    │
+│ top: 50px   top: 50px   top: 40px │
+└────────────────────────────────────┘</div>
+            </div>
+
+            <div class="layout-option" data-layout="left" onclick="selectLayout('left')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>方案 2: 左右兩欄佈局</strong>
+                        <div style="color: #666; font-size: 14px; margin-top: 5px;">
+                            Logo + 標題在左側，公司資訊右側
+                        </div>
+                    </div>
+                    <input type="radio" name="layout" value="left">
+                </div>
+                <div class="layout-diagram">┌────────────────────────────────────┐
+│ [Logo]  報價單          [公司資訊]  │
+│ 左側組合                   右側      │
+│                                    │
+│ top: 50px               top: 40px │
+└────────────────────────────────────┘</div>
+            </div>
+
+            <div class="layout-option" data-layout="compact" onclick="selectLayout('compact')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>方案 3: 緊湊型佈局</strong>
+                        <div style="color: #666; font-size: 14px; margin-top: 5px;">
+                            標題更靠上，節省最多空間
+                        </div>
+                    </div>
+                    <input type="radio" name="layout" value="compact">
+                </div>
+                <div class="layout-diagram">┌────────────────────────────────────┐
+│ [Logo]      報價單      [公司資訊]  │
+│                                    │
+│ top: 40px   top: 35px   top: 40px │
+└────────────────────────────────────┘</div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="applyLayout()">🚀 套用佈局</button>
+            <button onclick="resetLayout()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                🔄 重置為預設
+            </button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let selectedLayout = 'center';
+
+        function selectLayout(layout) {
+            selectedLayout = layout;
+            document.querySelectorAll('.layout-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`[data-layout="${layout}"]`).classList.add('selected');
+            document.querySelector(`input[value="${layout}"]`).checked = true;
+        }
+
+        async function applyLayout() {
+            const status = document.getElementById('status');
+            status.className = 'info';
+            status.textContent = '⏳ 正在套用佈局...';
+
+            try {
+                // 載入當前位置
+                const positions = await db.getPDFElementPositions();
+
+                // 根據選擇的方案調整位置
+                const layouts = {
+                    center: {
+                        logo: { top: 50 },
+                        title: { left: 297.5, top: 50 },  // 居中，與 logo 同高
+                        'company-info': { top: 40 }  // 保持原位
+                    },
+                    left: {
+                        logo: { top: 50 },
+                        title: { left: 200, top: 55 },  // 靠左，略低於 logo
+                        'company-info': { top: 40 }
+                    },
+                    compact: {
+                        logo: { top: 40 },
+                        title: { left: 297.5, top: 35 },  // 居中，更靠上
+                        'company-info': { top: 40 }
+                    }
+                };
+
+                const layout = layouts[selectedLayout];
+
+                // 更新位置
+                if (positions.logo) {
+                    positions.logo.top = layout.logo.top;
+                }
+                if (positions.title) {
+                    positions.title.left = layout.title.left;
+                    positions.title.top = layout.title.top;
+                }
+                if (positions['company-info']) {
+                    positions['company-info'].top = layout['company-info'].top;
+                }
+
+                // 同時調整其他元件向上移動（如果使用緊湊型）
+                if (selectedLayout === 'compact') {
+                    const moveUp = 20; // 向上移動 20px
+                    ['separator-line', 'invoice-info', 'customer-info', 'customer-detail', 
+                     'items-table', 'total', 'notes'].forEach(key => {
+                        if (positions[key]) {
+                            positions[key].top = Math.max(positions[key].top - moveUp, 0);
+                        }
+                    });
+                }
+
+                // 保存到 Supabase
+                await db.savePDFElementPositions(positions);
+
+                status.className = 'success';
+                status.innerHTML = `
+                    <strong>✅ 佈局套用成功！</strong><br><br>
+                    <strong>下一步：</strong><br>
+                    1. 返回主系統 (index-new.html)<br>
+                    2. 強制刷新: <strong>Cmd + Shift + R</strong> (Mac) 或 <strong>Ctrl + Shift + R</strong> (Windows)<br>
+                    3. 打開 "🎨 PDF 排版控制器" 查看效果<br>
+                    4. 如需微調，可在控制器中手動拖動<br>
+                    5. 生成 PDF 測試
+                `;
+
+            } catch (error) {
+                console.error('套用失敗:', error);
+                status.className = 'error';
+                status.innerHTML = `<strong>❌ 套用失敗</strong><br>${error.message}`;
+            }
+        }
+
+        async function resetLayout() {
+            if (!confirm('確定要重置為預設佈局嗎？\n\n這會將標題移回中間位置。')) {
+                return;
+            }
+
+            const status = document.getElementById('status');
+            status.className = 'info';
+            status.textContent = '⏳ 正在重置...';
+
+            try {
+                const positions = await db.getPDFElementPositions();
+
+                // 重置為預設位置
+                if (positions.logo) positions.logo.top = 40;
+                if (positions.title) {
+                    positions.title.left = 297.5;
+                    positions.title.top = 150;
+                }
+                if (positions['company-info']) positions['company-info'].top = 40;
+                if (positions['separator-line']) positions['separator-line'].top = 190;
+                if (positions['invoice-info']) positions['invoice-info'].top = 210;
+                if (positions['customer-info']) positions['customer-info'].top = 210;
+                if (positions['customer-detail']) positions['customer-detail'].top = 280;
+                if (positions['items-table']) positions['items-table'].top = 380;
+                if (positions.total) positions.total.top = 480;
+                if (positions.notes) positions.notes.top = 762;
+
+                await db.savePDFElementPositions(positions);
+
+                status.className = 'success';
+                status.innerHTML = '<strong>✅ 已重置為預設佈局！</strong><br>請刷新主系統查看效果。';
+
+            } catch (error) {
+                console.error('重置失敗:', error);
+                status.className = 'error';
+                status.innerHTML = `<strong>❌ 重置失敗</strong><br>${error.message}`;
+            }
+        }
+
+        // 預設選中方案 1
+        selectLayout('center');
+    </script>
+</body>
+</html>

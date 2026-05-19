@@ -1,0 +1,79 @@
+✨ Logo 與銀行資料功能設定指南
+========================================
+
+📋 功能概述
+----------
+系統已新增以下功能：
+1. 公司 Logo 上傳（顯示在 PDF 左上角）
+2. 銀行資料管理（顯示在 PDF 底部）
+
+🗄️ 資料庫更新
+-------------
+請在 Supabase SQL Editor 中執行以下 SQL：
+
+```sql
+-- 添加銀行資料欄位
+ALTER TABLE companies 
+ADD COLUMN IF NOT EXISTS bank_name TEXT;
+
+ALTER TABLE companies 
+ADD COLUMN IF NOT EXISTS bank_account TEXT;
+
+ALTER TABLE companies 
+ADD COLUMN IF NOT EXISTS bank_code TEXT;
+
+ALTER TABLE companies 
+ADD COLUMN IF NOT EXISTS bank_swift TEXT;
+```
+
+或者執行檔案：update-companies-table.sql
+
+⚙️ 設定步驟
+-----------
+1. 進入系統「設定」頁面
+2. 在「公司 Logo」區塊：
+   - 點擊「選擇檔案」上傳 Logo
+   - 支援 JPG、PNG 格式
+   - 建議尺寸：200x100px
+   - 檔案大小限制：2MB
+
+3. 填寫「銀行資料」：
+   - 銀行名稱：例如 OCBC Bank
+   - 銀行帳號：例如 161 Queen's Road Central, HK
+   - 銀行代碼：例如 Acct#: 136-125-831
+   - SWIFT Code：例如 OCBCHKHH
+
+4. 點擊「💾 儲存設定」
+
+📄 PDF 顯示效果
+--------------
+生成的 PDF 會顯示：
+
+頂部：
+- 左上角：公司 Logo（如果已上傳）
+- 右上角：公司名稱
+
+底部：
+- 公司名稱 • Acct#: 帳戶號碼 • Bank: 銀行名稱 • BIC/SWIFT: SWIFT代碼
+- Beneficiary Bank Address: 銀行地址
+
+💾 資料儲存
+-----------
+- Logo 以 Base64 格式儲存在資料庫的 logo_url 欄位
+- 銀行資料儲存在 companies 表的對應欄位
+
+🔍 故障排除
+-----------
+如果 Logo 無法顯示：
+1. 確認圖片格式為 JPG 或 PNG
+2. 確認檔案小於 2MB
+3. 檢查瀏覽器控制台是否有錯誤訊息
+
+如果銀行資料未顯示在 PDF：
+1. 確認已執行資料庫更新 SQL
+2. 確認已在設定頁面填寫並儲存銀行資料
+3. 重新生成 PDF
+
+✅ 完成！
+--------
+設定完成後，所有新生成的 PDF 都會包含 Logo 和銀行資料。

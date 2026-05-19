@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>測試位置同步</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .preview-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .preview {
+            width: 595px;
+            height: 842px;
+            border: 1px solid #ddd;
+            position: relative;
+            background: white;
+            margin: 20px auto;
+        }
+        .element {
+            position: absolute;
+            border: 2px solid red;
+            background: rgba(255, 0, 0, 0.1);
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📐 位置同步測試工具</h1>
+        
+        <div class="info">
+            <h3>測試說明</h3>
+            <p>1. 點擊「載入位置」按鈕從 localStorage 讀取已保存的元件位置</p>
+            <p>2. 檢查紅框是否標示了元件位置</p>
+            <p>3. 查看下方的座標轉換結果</p>
+            <p>4. 對比預覽圖和實際 PDF</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <button onclick="loadPositions()">📍 載入位置</button>
+            <button onclick="clearPositions()">🗑️ 清除位置</button>
+            <button onclick="showConversions()">🔄 顯示轉換</button>
+        </div>
+
+        <div class="preview-box">
+            <h2>預覽器尺寸：595×842 px</h2>
+            <div class="preview" id="preview">
+                <!-- 元件會動態添加 -->
+            </div>
+        </div>
+
+        <div class="preview-box">
+            <h2>📊 位置數據</h2>
+            <pre id="positions-data">點擊「載入位置」按鈕...</pre>
+        </div>
+
+        <div class="preview-box">
+            <h2>🔄 座標轉換</h2>
+            <pre id="conversion-data">點擊「顯示轉換」按鈕...</pre>
+        </div>
+    </div>
+
+    <script>
+        const pdfWidth = 595;   // PDF 預覽寬度 px
+        const pdfHeight = 842;  // PDF 預覽高度 px
+        const pageWidth = 210;  // A4 寬度 mm
+        const pageHeight = 297; // A4 高度 mm
+
+        // 像素轉毫米
+        const pxToMm = (px) => (px / pdfWidth) * pageWidth;
+        const pyToMm = (py) => (py / pdfHeight) * pageHeight;
+
+        function loadPositions() {
+            try {
+                const saved = localStorage.getItem('pdfElementPositions');
+                if (!saved) {
+                    alert('沒有保存的位置數據！\n請先打開 PDF 排版控制器並調整位置。');
+                    return;
+                }
+
+                const positions = JSON.parse(saved);
+                document.getElementById('positions-data').textContent = JSON.stringify(positions, null, 2);
+
+                // 清空預覽
+                const preview = document.getElementById('preview');
+                preview.innerHTML = '';
+
+                // 顯示每個元件的位置
+                Object.keys(positions).forEach(key => {
+                    const pos = positions[key];
+                    const element = document.createElement('div');
+                    element.className = 'element';
+                    element.style.left = pos.left + 'px';
+                    element.style.top = pos.top + 'px';
+                    element.style.width = (pos.width || 100) + 'px';
+                    element.style.height = (pos.height || 30) + 'px';
+                    element.innerHTML = `
+                        <div style="font-size: 10px; font-weight: bold; padding: 2px;">
+                            ${key}<br>
+                            (${pos.left}, ${pos.top})
+                        </div>
+                    `;
+                    preview.appendChild(element);
+                });
+
+                alert('✅ 位置已載入！\n請查看預覽器中的紅框。');
+            } catch (e) {
+                alert('❌ 載入失敗：' + e.message);
+            }
+        }
+
+        function clearPositions() {
+            if (confirm('確定要清除所有位置數據嗎？')) {
+                localStorage.removeItem('pdfElementPositions');
+                document.getElementById('preview').innerHTML = '';
+                document.getElementById('positions-data').textContent = '已清除';
+                document.getElementById('conversion-data').textContent = '已清除';
+                alert('✅ 已清除位置數據');
+            }
+        }
+
+        function showConversions() {
+            try {
+                const saved = localStorage.getItem('pdfElementPositions');
+                if (!saved) {
+                    alert('沒有保存的位置數據！');
+                    return;
+                }
+
+                const positions = JSON.parse(saved);
+                let output = '像素座標 → 毫米座標\n';
+                output += '='.repeat(60) + '\n\n';
+
+                Object.keys(positions).forEach(key => {
+                    const pos = positions[key];
+                    output += `${key}:\n`;
+                    output += `  原始位置 (px): left=${pos.left}, top=${pos.top}`;
+                    if (pos.width) output += `, width=${pos.width}, height=${pos.height}`;
+                    output += '\n';
+                    
+                    output += `  轉換位置 (mm): x=${pxToMm(pos.left).toFixed(2)}, y=${pyToMm(pos.top).toFixed(2)}`;
+                    if (pos.width) output += `, w=${pxToMm(pos.width).toFixed(2)}, h=${pyToMm(pos.height).toFixed(2)}`;
+                    output += '\n';
+                    
+                    // 計算百分比
+                    const xPercent = (pos.left / pdfWidth * 100).toFixed(1);
+                    const yPercent = (pos.top / pdfHeight * 100).toFixed(1);
+                    output += `  頁面位置 (%): ${xPercent}% from left, ${yPercent}% from top\n`;
+                    output += '\n';
+                });
+
+                output += '\n' + '='.repeat(60) + '\n';
+                output += '轉換公式：\n';
+                output += `  x (mm) = (left / ${pdfWidth}) × ${pageWidth}\n`;
+                output += `  y (mm) = (top / ${pdfHeight}) × ${pageHeight}\n`;
+
+                document.getElementById('conversion-data').textContent = output;
+            } catch (e) {
+                alert('❌ 轉換失敗：' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

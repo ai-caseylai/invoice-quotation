@@ -1,0 +1,143 @@
+{
+  "type": "quotation",
+  "invoice_no": "INV22-1175",
+  "output_filename": "INV22-1175_公司秘書管理系統_PaulTang.pdf",
+  "date": "24/9/2024",
+  "customer": "PAUL TANG & CO LTD",
+  "attention": "Ms. Tang Siu Fan",
+  "tel": "56146477",
+  "mobile": "",
+  "email": "info@wlptcpa.com",
+  "address": "Flat/Rm 405, 4/F, Tung Ning Bldg, 249 - 251 Des Voeux Rd Central, H.K.",
+  "logo": "/Users/apple/Downloads/cropped-Muse-Labs-Engineering-Ltd-Logo-PNG-1-90x90.png",
+  "project_title": "公司秘書管理系統",
+  "items": [
+    {
+      "no": 1,
+      "description": "UI/UX 介面",
+      "qty": 1,
+      "unit_price": 20000,
+      "sub_items": [
+        "員工介面",
+        "管理層介面"
+      ]
+    },
+    {
+      "no": 2,
+      "description": "公司資料管理",
+      "qty": 1,
+      "unit_price": 12800,
+      "sub_items": [
+        "基本資料管理",
+        "股份管理",
+        "附件資料管理"
+      ]
+    },
+    {
+      "no": 3,
+      "description": "自然人管理",
+      "qty": 1,
+      "unit_price": 12800,
+      "sub_items": [
+        "基本資料管理",
+        "多地址管理",
+        "附件資料管理"
+      ]
+    },
+    {
+      "no": 4,
+      "description": "公司成員管理",
+      "qty": 1,
+      "unit_price": 20000,
+      "sub_items": [
+        "負責人管理",
+        "董事管理",
+        "股東管理",
+        "秘書管理",
+        "授權代表管理",
+        "指定代表管理",
+        "備選董事管理",
+        "重要控制人管理"
+      ]
+    },
+    {
+      "no": 5,
+      "description": "版本管理",
+      "qty": 1,
+      "unit_price": 20000,
+      "sub_items": [
+        "公司資料版本管理",
+        "股權變更記錄",
+        "人事變更記錄",
+        "其他公司資料變更記錄"
+      ]
+    },
+    {
+      "no": 6,
+      "description": "檢索服務",
+      "qty": 1,
+      "unit_price": 24800,
+      "sub_items": [
+        "公司資訊檢索",
+        "公司股東檢索",
+        "歷史股東檢索",
+        "公司董事檢索",
+        "歷史董事檢索",
+        "重要控制人檢索"
+      ]
+    },
+    {
+      "no": 7,
+      "description": "文件生成服務",
+      "qty": 1,
+      "unit_price": 35500,
+      "sub_items": [
+        "Docx文件生成",
+        "PDF文件生成",
+        "NAR, ND2A, ND2B, ND4, NDR1",
+        "NN1, NN3, NN6, NN7, NN9",
+        "NNC1, NNC2, NR1, NSC1"
+      ]
+    },
+    {
+      "no": 8,
+      "description": "郵件模塊",
+      "qty": 1,
+      "unit_price": 20000,
+      "sub_items": [
+        "郵件模板管理（發票郵件、客戶資料獲取郵件）",
+        "郵件定時任務"
+      ]
+    },
+    {
+      "no": 9,
+      "description": "任務管理",
+      "qty": 1,
+      "unit_price": 17600,
+      "sub_items": [
+        "任務提醒",
+        "任務日曆",
+        "超時警告"
+      ]
+    },
+    {
+      "no": 10,
+      "description": "使用者管理",
+      "qty": 1,
+      "unit_price": 16500,
+      "sub_items": [
+        "多使用者管理",
+        "多級權限管理"
+      ]
+    }
+  ],
+  "subtotal": 200000,
+  "discount": 0,
+  "total": 200000,
+  "deposit": 0,
+  "deposit_label": "",
+  "payment_terms": "Deposit Received HK$ 120,000\nRemaining balance to be settled.",
+  "remark": "",
+  "chop": "musleabs eng chop.png",
+  "signature_name": "CASEY LAI"
+}

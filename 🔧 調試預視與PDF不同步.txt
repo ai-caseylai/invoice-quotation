@@ -1,0 +1,207 @@
+🔧 調試預視與 PDF 不同步問題
+==============================
+
+## 當前問題
+
+從圖片看到：
+- ✅ 預視圖：Logo 較大，位置在左上角
+- ❌ PDF：Logo 很小，位置不正確
+
+## 調試步驟
+
+### 步驟 1：檢查位置數據
+
+1. 打開 `test-position-sync.html`
+2. 點擊「📍 載入位置」
+3. 查看紅框是否與預視圖一致
+4. 點擊「🔄 顯示轉換」查看座標轉換
+
+預期輸出：
+```
+logo:
+  原始位置 (px): left=40, top=40, width=200, height=120
+  轉換位置 (mm): x=14.12, y=14.14, w=70.59, h=42.35
+  頁面位置 (%): 6.7% from left, 4.7% from top
+```
+
+### 步驟 2：對比預視與 PDF 模擬
+
+1. 打開 `test-pdf-layout.html`
+2. 點擊「📥 載入數據」
+3. 左側是預視器（紅框），右側是 PDF 模擬（綠框）
+4. 對比兩邊的元件位置
+
+### 步驟 3：生成測試 PDF
+
+1. 在 `test-pdf-layout.html` 中
+2. 點擊「📄 生成測試 PDF」
+3. 下載會包含：
+   - 網格線（每 10mm）
+   - 元件框（紅色）
+   - 座標標註
+
+### 步驟 4：檢查控制台輸出
+
+生成 PDF 時，打開瀏覽器控制台（F12），查看：
+
+```
+開始繪製 PDF，資料: {...}
+使用自定義位置: { logo: {...}, title: {...}, ... }
+預覽器尺寸: { pdfWidth: 595, pdfHeight: 842 }
+PDF 頁面尺寸: { pageWidth: 210, pageHeight: 297 }
+Logo 原始位置 (px): { left: 40, top: 40, width: 200, height: 120 }
+Logo 轉換位置 (mm): { x: 14.12, y: 14.14, w: 70.59, h: 42.35 }
+✅ Logo 已添加
+```
+
+## 常見問題與解決方案
+
+### 問題 1：Logo 尺寸不對
+
+**原因**：預視器中 Logo 圖片加載後自動調整了尺寸，但沒有保存
+
+**解決**：
+1. 打開 PDF 排版控制器
+2. 重新調整 Logo 大小
+3. 點擊「💾 儲存設定與位置」
+4. 檢查 localStorage 中是否有 width 和 height
+
+**驗證**：
+```javascript
+// 在控制台執行
+const positions = JSON.parse(localStorage.getItem('pdfElementPositions'));
+console.log('Logo 尺寸:', positions.logo);
+// 應該輸出: { left: 40, top: 40, width: 200, height: 120 }
+```
+
+### 問題 2：座標轉換錯誤
+
+**檢查轉換公式**：
+```javascript
+// 正確的公式
+const pxToMm = (px) => (px / 595) * 210;
+const pyToMm = (py) => (py / 842) * 297;
+
+// 測試
+console.log('40px =', pxToMm(40), 'mm');  // 應該是 14.12mm
+console.log('595px =', pxToMm(595), 'mm'); // 應該是 210mm
+```
+
+### 問題 3：右對齊元件位置錯誤
+
+**原因**：右對齊元件需要特殊處理
+
+**檢查**：
+```javascript
+// 對於右對齊元件（公司信息、客戶信息、總計）
+if (companyPos.left > 297.5) { // > 50% of 595
+    companyX = 210 - pxToMm(595 - companyPos.left);
+}
+```
+
+### 問題 4：Logo 沒有圖片，只有漸變
+
+**檢查**：
+1. Logo URL 是否正確
+2. 圖片是否可以訪問
+3. 控制台是否有 CORS 錯誤
+
+**測試**：
+```javascript
+// 在控制台執行
+db.getCompany().then(company => {
+    console.log('Logo URL:', company.logo_url);
+    
+    // 測試圖片
+    const img = new Image();
+    img.onload = () => console.log('✅ 圖片可訪問', img.naturalWidth, 'x', img.naturalHeight);
+    img.onerror = () => console.error('❌ 圖片載入失敗');
+    img.src = company.logo_url;
+});
+```
+
+## 修復建議
+
+### 立即修復
+
+如果發現位置數據有問題：
+
+1. **清除並重新設置**
+   ```javascript
+   localStorage.removeItem('pdfElementPositions');
+   ```
+
+2. **重新打開排版控制器**
+   - 調整所有元件位置
+   - 特別注意 Logo 的尺寸
+   - 儲存設定
+
+3. **驗證數據**
+   ```javascript
+   const positions = JSON.parse(localStorage.getItem('pdfElementPositions'));
+   console.table(positions);
+   ```
+
+### 代碼檢查
+
+如果座標轉換不正確，檢查 `documents.js` 中的：
+
+```javascript:documents.js
+// 第 608-615 行
+const pdfWidth = 595;  // ✓ 正確
+const pdfHeight = 842; // ✓ 正確
+const pageWidth = 210;  // ✓ 正確
+const pageHeight = 297; // ✓ 正確
+
+const pxToMm = (px) => (px / pdfWidth) * pageWidth;
+const pyToMm = (py) => (py / pdfHeight) * pageHeight;
+```
+
+## 完整測試流程
+
+1. **清空舊數據**
+   ```javascript
+   localStorage.removeItem('pdfElementPositions');
+   ```
+
+2. **設置排版**
+   - 打開 PDF 排版控制器
+   - Logo 調整到合適大小（例如 200×120px）
+   - 拖動 Logo 到左上角（例如 40, 40）
+   - 儲存設定
+
+3. **驗證預視**
+   - 打開 `test-position-sync.html`
+   - 載入位置，檢查紅框
+   - 顯示轉換，檢查座標
+
+4. **測試 PDF**
+   - 打開 `test-pdf-layout.html`
+   - 生成測試 PDF
+   - 對比網格和元件框
+
+5. **生成真實 PDF**
+   - 在單據管理中選擇一個單據
+   - 點擊下載 PDF
+   - 檢查 Logo 位置和大小
+
+## 預期結果
+
+如果一切正常：
+- ✅ 預視器中 Logo 大小: 200×120px，位置: (40, 40)
+- ✅ PDF 中 Logo 大小: 70.6×42.4mm，位置: (14.1, 14.1)
+- ✅ 視覺上兩者應該一致（比例相同）
+
+## 如果問題仍然存在
+
+請提供以下資訊：
+
+1. **控制台輸出**（生成 PDF 時的完整日誌）
+2. **位置數據**（localStorage 中的 pdfElementPositions）
+3. **預視圖截圖**（顯示 Logo 大小和位置）
+4. **PDF 截圖**（顯示實際效果）
+5. **測試 PDF**（從 test-pdf-layout.html 生成的檔案）
+
+---
+
+更新時間：2025-12-10

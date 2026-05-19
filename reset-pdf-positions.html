@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 重置 PDF 元件位置</title>
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin: 10px 10px 10px 0;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        #status {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 重置 PDF 元件位置</h1>
+        <p class="description">
+            此工具將重置 PDF 元件位置到正確的預設值。<br>
+            這些位置是相對於 595×842px 的 PDF 預覽容器計算的。
+        </p>
+
+        <div class="warning">
+            ⚠️ <strong>注意</strong>：此操作將覆蓋當前保存在 Supabase 的所有元件位置！
+        </div>
+
+        <div class="info">
+            <strong>📐 預設位置說明</strong>：
+            <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li><strong>Logo</strong>: 左上角 (40, 40) - 150×75px</li>
+                <li><strong>公司資訊</strong>: 右上角 (305, 40)</li>
+                <li><strong>標題</strong>: 中上方 (297.5, 150)</li>
+                <li><strong>分隔線</strong>: (40, 190) - 寬 515px</li>
+                <li><strong>發票信息</strong>: 左側 (40, 210)</li>
+                <li><strong>客戶信息</strong>: 右側 (335, 210)</li>
+                <li><strong>客戶詳細</strong>: 左下 (40, 280)</li>
+                <li><strong>項目表格</strong>: 中間 (40, 380) - 寬 515px</li>
+                <li><strong>總計</strong>: 右側 (305, 480)</li>
+                <li><strong>備註</strong>: 底部 (40, 762)</li>
+            </ul>
+        </div>
+
+        <button onclick="previewPositions()">👀 預覽位置</button>
+        <button onclick="resetPositions()">🔄 重置位置</button>
+        <button class="secondary" onclick="verifyPositions()">✓ 驗證當前位置</button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // PDF 預覽容器尺寸
+        const PDF_WIDTH = 595;
+        const PDF_HEIGHT = 842;
+
+        // 預設元件位置 (相對於 595×842 預覽容器)
+        const DEFAULT_POSITIONS = {
+            'logo': {
+                left: 40,
+                top: 40,
+                width: 150,
+                height: 75
+            },
+            'company-info': {
+                left: 305,
+                top: 40,
+                width: 250,
+                height: 100
+            },
+            'title': {
+                left: PDF_WIDTH / 2,  // 297.5 (居中)
+                top: 150,
+                width: 200,
+                height: 50
+            },
+            'separator-line': {
+                left: 40,
+                top: 190,
+                width: 515,
+                height: 2
+            },
+            'invoice-info': {
+                left: 40,
+                top: 210,
+                width: 200,
+                height: 60
+            },
+            'customer-info': {
+                left: 335,
+                top: 210,
+                width: 220,
+                height: 60
+            },
+            'customer-detail': {
+                left: 40,
+                top: 280,
+                width: 250,
+                height: 80
+            },
+            'items-table': {
+                left: 40,
+                top: 380,
+                width: 515,
+                height: 200
+            },
+            'total': {
+                left: 305,
+                top: 480,
+                width: 250,
+                height: 100
+            },
+            'notes': {
+                left: 40,
+                top: PDF_HEIGHT - 80,  // 762
+                width: 300,
+                height: 60
+            }
+        };
+
+        function previewPositions() {
+            const status = document.getElementById('status');
+            status.innerHTML = `
+                <div class="info">
+                    <h3>📐 預設位置預覽</h3>
+                    <pre>${JSON.stringify(DEFAULT_POSITIONS, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        async function resetPositions() {
+            const status = document.getElementById('status');
+            
+            if (!confirm('確定要重置所有元件位置嗎？此操作將覆蓋當前保存的位置。')) {
+                return;
+            }
+
+            try {
+                status.innerHTML = `
+                    <div class="info">
+                        🔄 正在重置位置到 Supabase...
+                    </div>
+                `;
+
+                console.log('準備保存的位置:', DEFAULT_POSITIONS);
+
+                // 保存到 Supabase
+                await db.savePDFElementPositions(DEFAULT_POSITIONS);
+
+                status.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 位置重置成功！</h3>
+                        <p>已將 ${Object.keys(DEFAULT_POSITIONS).length} 個元件的位置重置為預設值。</p>
+                        <p><strong>下一步</strong>：</p>
+                        <ol style="margin: 10px 0 0 0; padding-left: 20px;">
+                            <li>返回主系統 (index-new.html)</li>
+                            <li>強制刷新瀏覽器 (Cmd+Shift+R)</li>
+                            <li>生成一個 PDF 測試</li>
+                        </ol>
+                    </div>
+                `;
+
+                console.log('✅ 位置重置完成');
+
+            } catch (error) {
+                console.error('重置失敗:', error);
+                status.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 重置失敗</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function verifyPositions() {
+            const status = document.getElementById('status');
+            
+            try {
+                status.innerHTML = `
+                    <div class="info">
+                        🔍 正在從 Supabase 讀取當前位置...
+                    </div>
+                `;
+
+                const positions = await db.getPDFElementPositions();
+
+                if (!positions || Object.keys(positions).length === 0) {
+                    status.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Supabase 中沒有保存任何位置數據！<br>
+                            請點擊「重置位置」按鈕創建預設位置。
+                        </div>
+                    `;
+                    return;
+                }
+
+                // 檢查位置是否合理
+                let issues = [];
+                for (let [key, pos] of Object.entries(positions)) {
+                    if (pos.top > PDF_HEIGHT || pos.left > PDF_WIDTH) {
+                        issues.push(`❌ ${key}: 座標超出範圍 (${pos.left}, ${pos.top})`);
+                    } else {
+                        issues.push(`✅ ${key}: OK (${pos.left}, ${pos.top})`);
+                    }
+                }
+
+                const hasIssues = issues.some(i => i.startsWith('❌'));
+
+                status.innerHTML = `
+                    <div class="${hasIssues ? 'warning' : 'success'}">
+                        <h3>${hasIssues ? '⚠️' : '✅'} 當前位置驗證結果</h3>
+                        <pre>${JSON.stringify(positions, null, 2)}</pre>
+                        <h4>檢查結果：</h4>
+                        <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                            ${issues.map(i => `<li>${i}</li>`).join('')}
+                        </ul>
+                        ${hasIssues ? '<p><strong>建議</strong>：點擊「重置位置」按鈕修復問題。</p>' : ''}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('驗證失敗:', error);
+                status.innerHTML = `
+                    <div class="error">
+                        <h3>❌ 驗證失敗</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 頁面載入時自動驗證
+        window.addEventListener('load', () => {
+            console.log('PDF 重置工具已載入');
+            console.log('預設位置:', DEFAULT_POSITIONS);
+        });
+    </script>
+</body>
+</html>

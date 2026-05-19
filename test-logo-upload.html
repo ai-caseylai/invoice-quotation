@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logo 上傳測試</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #e9ecef;
+            border-color: #5568d3;
+        }
+
+        .upload-area.dragging {
+            background: #e7e9fc;
+            border-color: #5568d3;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .preview.show {
+            display: block;
+        }
+
+        .preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            padding: 5px;
+            margin-bottom: 5px;
+            border-left: 3px solid #667eea;
+            padding-left: 10px;
+        }
+
+        .log-entry.success {
+            border-color: #27ae60;
+            color: #27ae60;
+        }
+
+        .log-entry.error {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+
+        .log-entry.warning {
+            border-color: #f39c12;
+            color: #f39c12;
+        }
+
+        .status {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Logo 上傳測試</h1>
+        <p class="subtitle">測試 Supabase Storage 和自動壓縮功能</p>
+
+        <div class="info">
+            <strong>📋 測試項目：</strong><br>
+            1️⃣ Supabase Storage 連接<br>
+            2️⃣ 自動創建 Bucket<br>
+            3️⃣ 圖片上傳功能<br>
+            4️⃣ 自動壓縮降級<br>
+            5️⃣ URL 生成
+        </div>
+
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-icon">📤</div>
+            <p style="font-size: 16px; color: #667eea; font-weight: 600; margin-bottom: 5px;">
+                點擊或拖曳上傳 Logo
+            </p>
+            <p style="font-size: 12px; color: #999;">
+                支援 JPG, PNG 格式，最大 2MB
+            </p>
+        </div>
+
+        <input type="file" id="fileInput" accept="image/*">
+
+        <button class="btn" id="uploadBtn" disabled>
+            選擇檔案開始測試
+        </button>
+
+        <div class="preview" id="preview">
+            <h3 style="margin-bottom: 10px;">預覽：</h3>
+            <img id="previewImg" src="" alt="Preview">
+            <p id="fileInfo" style="color: #666; font-size: 14px;"></p>
+        </div>
+
+        <div id="status"></div>
+
+        <div class="log" id="log">
+            <div class="log-entry">等待上傳...</div>
+        </div>
+    </div>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+
+    <script>
+        // 初始化 Supabase
+        const supabase = window.supabase.createClient(
+            CONFIG.SUPABASE.URL,
+            CONFIG.SUPABASE.ANON_KEY
+        );
+        
+        addLog('✅ Supabase 客戶端已初始化', 'success');
+        addLog(`📡 URL: ${CONFIG.SUPABASE.URL.substring(0, 30)}...`, 'success');
+
+        let selectedFile = null;
+
+        // 檔案選擇
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        // 拖曳上傳
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                document.getElementById('fileInput').files = e.dataTransfer.files;
+                handleFileSelect(file);
+            } else {
+                addLog('❌ 請選擇圖片檔案', 'error');
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            
+            // 顯示預覽
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('preview').classList.add('show');
+            };
+            reader.readAsDataURL(file);
+            
+            // 顯示檔案資訊
+            const sizeKB = (file.size / 1024).toFixed(2);
+            document.getElementById('fileInfo').textContent = 
+                `檔名: ${file.name} | 大小: ${sizeKB} KB | 類型: ${file.type}`;
+            
+            addLog(`📁 已選擇: ${file.name} (${sizeKB} KB)`, 'success');
+            
+            // 啟用上傳按鈕
+            document.getElementById('uploadBtn').disabled = false;
+            document.getElementById('uploadBtn').textContent = '🚀 開始測試上傳';
+        }
+
+        // 上傳按鈕
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+            
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('uploadBtn').textContent = '⏳ 上傳中...';
+            
+            showStatus('正在上傳...', 'processing');
+            
+            try {
+                await testUpload(selectedFile);
+            } catch (error) {
+                addLog(`❌ 上傳失敗: ${error.message}`, 'error');
+                showStatus('上傳失敗', 'error');
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+                document.getElementById('uploadBtn').textContent = '🔄 重新測試';
+            }
+        });
+
+        async function testUpload(file) {
+            addLog('🔄 開始上傳流程...', '');
+            
+            // 驗證檔案大小
+            if (file.size > 2 * 1024 * 1024) {
+                throw new Error('檔案超過 2MB 限制');
+            }
+            addLog('✅ 檔案大小驗證通過', 'success');
+            
+            // 嘗試上傳到 Supabase Storage
+            const fileName = `test-logo-${Date.now()}.${file.name.split('.').pop()}`;
+            addLog(`📤 上傳檔名: ${fileName}`, '');
+            
+            try {
+                addLog('🔌 嘗試連接 Supabase Storage...', '');
+                
+                const { data, error } = await supabase.storage
+                    .from('company-assets')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (error) {
+                    addLog(`⚠️ Storage 錯誤: ${error.message}`, 'warning');
+                    
+                    // 嘗試創建 bucket
+                    if (error.message.includes('not found')) {
+                        addLog('🔧 嘗試創建 company-assets bucket...', '');
+                        
+                        const { error: bucketError } = await supabase.storage.createBucket('company-assets', {
+                            public: true,
+                            fileSizeLimit: 2097152
+                        });
+                        
+                        if (bucketError && !bucketError.message.includes('already exists')) {
+                            throw new Error(`創建 Bucket 失敗: ${bucketError.message}`);
+                        }
+                        
+                        addLog('✅ Bucket 已創建', 'success');
+                        
+                        // 重新上傳
+                        addLog('🔄 重新上傳...', '');
+                        const { data: retryData, error: retryError } = await supabase.storage
+                            .from('company-assets')
+                            .upload(fileName, file, {
+                                cacheControl: '3600',
+                                upsert: false
+                            });
+                        
+                        if (retryError) {
+                            throw new Error(`重新上傳失敗: ${retryError.message}`);
+                        }
+                    } else {
+                        throw error;
+                    }
+                }
+                
+                // 獲取公開 URL
+                const { data: urlData } = supabase.storage
+                    .from('company-assets')
+                    .getPublicUrl(fileName);
+                
+                addLog('✅ 上傳成功！', 'success');
+                addLog(`🔗 URL: ${urlData.publicUrl}`, 'success');
+                
+                showStatus(`✅ Storage 上傳成功！URL 長度: ${urlData.publicUrl.length} 字元`, 'success');
+                
+                // 測試圖片是否可訪問
+                addLog('🔍 測試圖片訪問...', '');
+                const img = new Image();
+                img.onload = () => {
+                    addLog('✅ 圖片可正常訪問！', 'success');
+                };
+                img.onerror = () => {
+                    addLog('⚠️ 圖片暫時無法訪問（可能需要等待）', 'warning');
+                };
+                img.src = urlData.publicUrl;
+                
+            } catch (storageError) {
+                addLog(`❌ Storage 上傳失敗: ${storageError.message}`, 'error');
+                addLog('🔄 切換到自動壓縮模式...', 'warning');
+                
+                // 降級：壓縮圖片
+                const compressed = await compressImage(file, 200, 100, 0.8);
+                const sizeKB = (compressed.length / 1024).toFixed(2);
+                
+                addLog(`✅ 圖片已壓縮 (Base64: ${sizeKB} KB)`, 'success');
+                showStatus(`⚠️ 使用本地儲存 (壓縮後 ${sizeKB} KB)`, 'error');
+            }
+        }
+
+        function compressImage(file, maxWidth, maxHeight, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function addLog(message, type = '') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+    </script>
+</body>
+</html>

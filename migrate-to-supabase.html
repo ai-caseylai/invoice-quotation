@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>📦 遷移 PDF 設定到 Supabase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .step-desc {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+        .data-preview {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .icon {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>
+                <span class="icon">📦</span>
+                遷移 PDF 設定到 Supabase
+            </h1>
+            <p class="subtitle">將 localStorage 中的 PDF 排版設定和元件位置遷移到 Supabase 數據庫</p>
+
+            <!-- 步驟 1: 檢查 localStorage -->
+            <div class="step">
+                <div class="step-title">步驟 1: 檢查 localStorage 數據</div>
+                <div class="step-desc">檢查本地瀏覽器中是否有 PDF 設定數據</div>
+                <button onclick="checkLocalStorage()">🔍 檢查數據</button>
+                <div id="status1"></div>
+                <div id="data1" class="data-preview"></div>
+            </div>
+
+            <!-- 步驟 2: 檢查 Supabase 連接 -->
+            <div class="step">
+                <div class="step-title">步驟 2: 檢查 Supabase 連接</div>
+                <div class="step-desc">確認可以連接到 Supabase 數據庫</div>
+                <button onclick="checkSupabase()">🔗 測試連接</button>
+                <div id="status2"></div>
+            </div>
+
+            <!-- 步驟 3: 執行遷移 -->
+            <div class="step">
+                <div class="step-title">步驟 3: 執行遷移</div>
+                <div class="step-desc">將 localStorage 的數據上傳到 Supabase</div>
+                <div class="btn-group">
+                    <button onclick="migrateSettings()">📤 遷移排版設定</button>
+                    <button onclick="migratePositions()">📤 遷移元件位置</button>
+                    <button onclick="migrateAll()">📤 遷移全部</button>
+                </div>
+                <div id="status3"></div>
+            </div>
+
+            <!-- 步驟 4: 驗證 -->
+            <div class="step">
+                <div class="step-title">步驟 4: 驗證遷移結果</div>
+                <div class="step-desc">從 Supabase 讀取數據，確認遷移成功</div>
+                <button onclick="verifyMigration()">✅ 驗證數據</button>
+                <div id="status4"></div>
+                <div id="data4" class="data-preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <script>
+        let localSettings = null;
+        let localPositions = null;
+
+        // 步驟 1: 檢查 localStorage
+        function checkLocalStorage() {
+            const status1 = document.getElementById('status1');
+            const data1 = document.getElementById('data1');
+            
+            try {
+                localSettings = localStorage.getItem('pdfLayoutSettings');
+                localPositions = localStorage.getItem('pdfElementPositions');
+                
+                let html = '';
+                let hasData = false;
+                
+                if (localSettings) {
+                    hasData = true;
+                    html += '<h4>📐 排版設定:</h4>';
+                    html += `<pre>${JSON.stringify(JSON.parse(localSettings), null, 2)}</pre>`;
+                }
+                
+                if (localPositions) {
+                    hasData = true;
+                    const positions = JSON.parse(localPositions);
+                    html += '<h4>📍 元件位置 (共 ' + Object.keys(positions).length + ' 個):</h4>';
+                    html += `<pre>${JSON.stringify(positions, null, 2)}</pre>`;
+                }
+                
+                if (hasData) {
+                    status1.innerHTML = `
+                        <div class="status success">
+                            ✅ 找到 localStorage 數據！<br>
+                            ${localSettings ? '✓ 排版設定' : ''}<br>
+                            ${localPositions ? '✓ 元件位置 (' + Object.keys(JSON.parse(localPositions)).length + ' 個元件)' : ''}
+                        </div>
+                    `;
+                    data1.innerHTML = html;
+                } else {
+                    status1.innerHTML = `
+                        <div class="status warning">
+                            ⚠️ localStorage 中沒有找到 PDF 設定數據<br>
+                            請確認您是否在正確的網域，並且之前有保存過設定
+                        </div>
+                    `;
+                    data1.innerHTML = '';
+                }
+            } catch (e) {
+                status1.innerHTML = `
+                    <div class="status error">
+                        ❌ 檢查失敗: ${e.message}
+                    </div>
+                `;
+                console.error(e);
+            }
+        }
+
+        // 步驟 2: 檢查 Supabase
+        async function checkSupabase() {
+            const status2 = document.getElementById('status2');
+            
+            try {
+                status2.innerHTML = `
+                    <div class="status info">
+                        🔄 正在測試 Supabase 連接...
+                    </div>
+                `;
+                
+                // 測試讀取公司資訊（這個表一定存在）
+                const company = await db.getCompany();
+                
+                status2.innerHTML = `
+                    <div class="status success">
+                        ✅ Supabase 連接成功！<br>
+                        URL: ${CONFIG.SUPABASE.URL}<br>
+                        測試查詢: 公司資訊表
+                    </div>
+                `;
+            } catch (e) {
+                status2.innerHTML = `
+                    <div class="status error">
+                        ❌ Supabase 連接失敗: ${e.message}<br>
+                        請檢查 config.js 中的配置
+                    </div>
+                `;
+                console.error(e);
+            }
+        }
+
+        // 步驟 3: 遷移排版設定
+        async function migrateSettings() {
+            const status3 = document.getElementById('status3');
+            
+            try {
+                if (!localSettings) {
+                    status3.innerHTML = `
+                        <div class="status warning">
+                            ⚠️ 沒有排版設定數據可遷移<br>
+                            請先執行步驟 1 檢查數據
+                        </div>
+                    `;
+                    return;
+                }
+                
+                status3.innerHTML = `
+                    <div class="status info">
+                        🔄 正在遷移排版設定...
+                    </div>
+                `;
+                
+                const settings = JSON.parse(localSettings);
+                await db.savePDFLayoutSettings(settings);
+                
+                status3.innerHTML = `
+                    <div class="status success">
+                        ✅ 排版設定遷移成功！
+                    </div>
+                `;
+            } catch (e) {
+                status3.innerHTML = `
+                    <div class="status error">
+                        ❌ 遷移失敗: ${e.message}
+                    </div>
+                `;
+                console.error(e);
+            }
+        }
+
+        // 步驟 3: 遷移元件位置
+        async function migratePositions() {
+            const status3 = document.getElementById('status3');
+            
+            try {
+                if (!localPositions) {
+                    status3.innerHTML = `
+                        <div class="status warning">
+                            ⚠️ 沒有元件位置數據可遷移<br>
+                            請先執行步驟 1 檢查數據
+                        </div>
+                    `;
+                    return;
+                }
+                
+                status3.innerHTML = `
+                    <div class="status info">
+                        🔄 正在遷移元件位置...
+                    </div>
+                `;
+                
+                const positions = JSON.parse(localPositions);
+                await db.savePDFElementPositions(positions);
+                
+                status3.innerHTML = `
+                    <div class="status success">
+                        ✅ 元件位置遷移成功！<br>
+                        已遷移 ${Object.keys(positions).length} 個元件
+                    </div>
+                `;
+            } catch (e) {
+                status3.innerHTML = `
+                    <div class="status error">
+                        ❌ 遷移失敗: ${e.message}
+                    </div>
+                `;
+                console.error(e);
+            }
+        }
+
+        // 步驟 3: 遷移全部
+        async function migrateAll() {
+            const status3 = document.getElementById('status3');
+            
+            try {
+                if (!localSettings && !localPositions) {
+                    status3.innerHTML = `
+                        <div class="status warning">
+                            ⚠️ 沒有數據可遷移<br>
+                            請先執行步驟 1 檢查數據
+                        </div>
+                    `;
+                    return;
+                }
+                
+                status3.innerHTML = `
+                    <div class="status info">
+                        🔄 正在遷移全部數據...
+                    </div>
+                `;
+                
+                let results = [];
+                
+                if (localSettings) {
+                    const settings = JSON.parse(localSettings);
+                    await db.savePDFLayoutSettings(settings);
+                    results.push('✅ 排版設定');
+                }
+                
+                if (localPositions) {
+                    const positions = JSON.parse(localPositions);
+                    await db.savePDFElementPositions(positions);
+                    results.push(`✅ 元件位置 (${Object.keys(positions).length} 個)`);
+                }
+                
+                status3.innerHTML = `
+                    <div class="status success">
+                        🎉 全部數據遷移成功！<br>
+                        ${results.join('<br>')}
+                    </div>
+                `;
+            } catch (e) {
+                status3.innerHTML = `
+                    <div class="status error">
+                        ❌ 遷移失敗: ${e.message}
+                    </div>
+                `;
+                console.error(e);
+            }
+        }
+
+        // 步驟 4: 驗證遷移
+        async function verifyMigration() {
+            const status4 = document.getElementById('status4');
+            const data4 = document.getElementById('data4');
+            
+            try {
+                status4.innerHTML = `
+                    <div class="status info">
+                        🔄 正在從 Supabase 讀取數據...
+                    </div>
+                `;
+                
+                const settings = await db.getPDFLayoutSettings();
+                const positions = await db.getPDFElementPositions();
+                
+                let html = '';
+                let success = true;
+                
+                if (settings && Object.keys(settings).length > 0) {
+                    html += '<h4>📐 排版設定 (從 Supabase):</h4>';
+                    html += `<pre>${JSON.stringify(settings, null, 2)}</pre>`;
+                } else {
+                    success = false;
+                }
+                
+                if (positions && Object.keys(positions).length > 0) {
+                    html += '<h4>📍 元件位置 (從 Supabase, 共 ' + Object.keys(positions).length + ' 個):</h4>';
+                    html += `<pre>${JSON.stringify(positions, null, 2)}</pre>`;
+                } else {
+                    success = false;
+                }
+                
+                if (success) {
+                    status4.innerHTML = `
+                        <div class="status success">
+                            ✅ 驗證成功！數據已正確保存到 Supabase<br>
+                            ${settings ? '✓ 排版設定' : ''}<br>
+                            ${positions ? '✓ 元件位置 (' + Object.keys(positions).length + ' 個元件)' : ''}
+                        </div>
+                    `;
+                    data4.innerHTML = html;
+                } else {
+                    status4.innerHTML = `
+                        <div class="status warning">
+                            ⚠️ 部分數據未找到<br>
+                            請檢查是否已執行遷移
+                        </div>
+                    `;
+                    data4.innerHTML = html;
+                }
+            } catch (e) {
+                status4.innerHTML = `
+                    <div class="status error">
+                        ❌ 驗證失敗: ${e.message}
+                    </div>
+                `;
+                console.error(e);
+            }
+        }
+
+        // 頁面載入時自動檢查
+        window.addEventListener('load', () => {
+            checkLocalStorage();
+        });
+    </script>
+</body>
+</html>
