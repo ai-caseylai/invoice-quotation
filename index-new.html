@@ -54,6 +54,40 @@
         </ul>
 
         <div class="sidebar-footer">
+            <a href="pdf-preview.html" target="_blank" style="
+                display: block;
+                padding: 12px 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                text-align: center;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 10px;
+                transition: all 0.3s;
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.3)'">
+                📐 PDF 排版預覽器
+            </a>
+            <button onclick="openLayoutEditor()" style="
+                display: block;
+                width: 100%;
+                padding: 12px 20px;
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                text-align: center;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 10px;
+                cursor: pointer;
+                transition: all 0.3s;
+                box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(245, 87, 108, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(245, 87, 108, 0.3)'">
+                🎨 PDF 排版控制器
+            </button>
             <a href="index.html" class="legacy-link">
                 📝 舊版發票生成器
             </a>
@@ -71,7 +105,1220 @@
         </div>
     </main>
 
+    <!-- 排版控制器模態框 -->
+    <div id="layoutEditorModal" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        z-index: 9999;
+        backdrop-filter: blur(5px);
+    ">
+        <div id="layoutEditorContainer" style="
+            position: absolute;
+            top: 1%;
+            left: 1%;
+            width: 98%;
+            height: 98%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        ">
+            <!-- 標題欄（可拖動） -->
+            <div id="layoutEditorHeader" style="
+                padding: 20px 30px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                cursor: move;
+                user-select: none;
+            ">
+                <h2 style="margin: 0; font-size: 24px;">🎨 PDF 排版控制器</h2>
+                <button onclick="closeLayoutEditor()" style="
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: white;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: 20px;
+                    transition: all 0.3s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    ✕
+                </button>
+            </div>
+
+            <!-- 主要內容 -->
+            <div style="
+                flex: 1;
+                display: flex;
+                overflow: hidden;
+            ">
+                <!-- 左側控制面板 -->
+                <div style="
+                    width: 350px;
+                    padding: 30px;
+                    overflow-y: auto;
+                    border-right: 1px solid #eee;
+                    background: #f9fafb;
+                ">
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color: #333;">📏 頁面設定</h3>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">頁邊距 (mm)</label>
+                            <input type="number" id="layoutMargin" value="20" min="10" max="40" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                                oninput="updatePreview()">
+                        </div>
+
+                        <div id="elementInfoPanel" style="
+                            background: linear-gradient(135deg, #e0e7ff 0%, #f5f3ff 100%);
+                            padding: 15px;
+                            border-radius: 8px;
+                            margin-top: 15px;
+                            font-size: 13px;
+                            color: #4c1d95;
+                            line-height: 1.6;
+                        ">
+                            <div style="font-weight: bold; margin-bottom: 8px;">💡 拖放提示</div>
+                            <div style="margin-bottom: 5px;">• 拖動元件調整位置</div>
+                            <div style="margin-bottom: 5px;">• 懸停顯示邊框</div>
+                            <div style="margin-bottom: 5px;">• 拖動時顯示座標</div>
+                            <div>• 位置自動保存</div>
+                        </div>
+
+                        <div id="availableElements" style="
+                            margin-top: 15px;
+                            padding: 12px;
+                            background: white;
+                            border: 2px solid #e0e7ff;
+                            border-radius: 8px;
+                        ">
+                            <div style="font-weight: bold; margin-bottom: 8px; color: #667eea; font-size: 13px;">📦 可拖動元件</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: #666;">
+                                <div>🏢 Logo</div>
+                                <div>📋 公司信息</div>
+                                <div>🎯 標題</div>
+                                <div>➖ 分隔線</div>
+                                <div>👤 客戶信息</div>
+                                <div>📄 發票信息</div>
+                                <div>📊 項目表格</div>
+                                <div>💰 總計</div>
+                                <div>📝 備註</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color: #333;">🎨 顏色設定</h3>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">主色調</label>
+                            <input type="color" id="layoutPrimaryColor" value="#667eea" 
+                                style="width: 100%; height: 45px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer;"
+                                oninput="updatePreview()">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="font-size: 16px; margin-bottom: 15px; color: #333;">📝 字體大小</h3>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">公司名稱 (pt)</label>
+                            <input type="number" id="layoutCompanyNameSize" value="16" min="10" max="24" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                                oninput="updatePreview()">
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">標題 (pt)</label>
+                            <input type="number" id="layoutTitleSize" value="24" min="16" max="32" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                                oninput="updatePreview()">
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">章節標題 (pt)</label>
+                            <input type="number" id="layoutSectionTitleSize" value="12" min="10" max="16" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                                oninput="updatePreview()">
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">表格字體 (pt)</label>
+                            <input type="number" id="layoutTableFontSize" value="10" min="8" max="12" 
+                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                                oninput="updatePreview()">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button onclick="saveLayoutSettings(event)" style="
+                            width: 100%;
+                            padding: 14px;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 15px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s;
+                            margin-bottom: 10px;
+                        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            💾 儲存設定與位置
+                        </button>
+
+                        <button onclick="resetElementPositions()" style="
+                            width: 100%;
+                            padding: 12px;
+                            background: #fef3c7;
+                            color: #92400e;
+                            border: 2px solid #fbbf24;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s;
+                        " onmouseover="this.style.background='#fde68a'" onmouseout="this.style.background='#fef3c7'">
+                            🔄 重置元件位置
+                        </button>
+                    </div>
+
+                    <div>
+                        <button onclick="resetLayoutSettings()" style="
+                            width: 100%;
+                            padding: 12px;
+                            background: #e0e7ff;
+                            color: #667eea;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">
+                            🔄 重置為預設值
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右側預覽區域 -->
+                <div style="
+                    flex: 1;
+                    padding: 30px;
+                    overflow-y: auto;
+                    background: #f5f5f5;
+                ">
+                    <div style="
+                        background: white;
+                        padding: 40px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                        max-width: 800px;
+                        margin: 0 auto;
+                        position: relative;
+                    ">
+                        <div id="pdfPreviewContainer" style="
+                            width: 595.28px;
+                            height: 841.89px;
+                            border: 1px solid #ddd;
+                            position: relative;
+                            background: white;
+                            margin: 0 auto;
+                            overflow: hidden;
+                        ">
+                            <!-- Logo 元件 -->
+                            <div class="draggable-element resizable-element" data-element="logo" style="
+                                position: absolute;
+                                left: 40px;
+                                top: 40px;
+                                width: 150px;
+                                height: 75px;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                background: white;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                overflow: hidden;
+                            ">
+                                <div style="
+                                    width: 100%;
+                                    height: 100%;
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-weight: bold;
+                                    font-size: 14px;
+                                ">LOGO</div>
+                                <!-- 调整大小手柄 -->
+                                <div class="resize-handle" style="
+                                    position: absolute;
+                                    right: -5px;
+                                    bottom: -5px;
+                                    width: 15px;
+                                    height: 15px;
+                                    background: #667eea;
+                                    border: 2px solid white;
+                                    border-radius: 50%;
+                                    cursor: nwse-resize;
+                                    display: none;
+                                    z-index: 10;
+                                "></div>
+                            </div>
+
+                            <!-- 公司信息元件 -->
+                            <div class="draggable-element" data-element="company-info" style="
+                                position: absolute;
+                                left: 305px;
+                                top: 40px;
+                                width: auto;
+                                max-width: 250px;
+                                padding: 0;
+                                background: transparent;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                font-size: 10px;
+                                line-height: 1.8;
+                                text-align: right;
+                                color: #666;
+                            ">
+                                <div style="font-weight: bold; font-size: 13px; color: #333; margin-bottom: 8px;">Muselabs Engineering Limited</div>
+                                <div style="margin-bottom: 3px;">Tel: 97188675</div>
+                                <div style="margin-bottom: 3px;">Email: casey.lai@muselabs-eng.com</div>
+                                <div>火炭坳背灣街51-53號東匯工業大廈1樓F室</div>
+                            </div>
+
+                            <!-- 標題元件 -->
+                            <div class="draggable-element" data-element="title" style="
+                                position: absolute;
+                                left: 247px;
+                                top: 150px;
+                                padding: 0;
+                                background: transparent;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                text-align: center;
+                            ">
+                                <div style="
+                                    font-size: 32px;
+                                    font-weight: bold;
+                                    color: #667eea;
+                                    letter-spacing: 4px;
+                                ">報價單</div>
+                            </div>
+
+                            <!-- 分隔線(可拖動) -->
+                            <div class="draggable-element" data-element="separator-line" style="
+                                position: absolute;
+                                left: 40px;
+                                width: 515px;
+                                top: 190px;
+                                height: 8px;
+                                padding: 3px 0;
+                                cursor: move;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                transition: all 0.2s;
+                                user-select: none;
+                            ">
+                                <div style="
+                                    height: 2px;
+                                    background: linear-gradient(90deg, #667eea, #764ba2);
+                                "></div>
+                            </div>
+
+                            <!-- 發票信息元件 -->
+                            <div class="draggable-element" data-element="invoice-info" style="
+                                position: absolute;
+                                left: 40px;
+                                top: 210px;
+                                width: auto;
+                                padding: 0;
+                                background: transparent;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                font-size: 10px;
+                                line-height: 1.8;
+                            ">
+                                <table style="border-collapse: collapse; font-size: 10px;">
+                                    <tr>
+                                        <td style="padding: 3px 15px 3px 0; color: #666;">Invoice No:</td>
+                                        <td style="padding: 3px 0; font-weight: 500;">QUO-202512-001</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 3px 15px 3px 0; color: #666;">Date:</td>
+                                        <td style="padding: 3px 0; font-weight: 500;">10/12/2025</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- 客戶信息元件 -->
+                            <div class="draggable-element" data-element="customer-info" style="
+                                position: absolute;
+                                left: 335px;
+                                top: 210px;
+                                width: auto;
+                                max-width: 220px;
+                                padding: 0;
+                                background: transparent;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                font-size: 10px;
+                                line-height: 1.8;
+                                text-align: right;
+                            ">
+                                <table style="border-collapse: collapse; font-size: 10px; width: 100%;">
+                                    <tr>
+                                        <td style="padding: 3px 15px 3px 0; color: #666; text-align: left;">Customer:</td>
+                                        <td style="padding: 3px 0; font-weight: 500; text-align: right;">AquaGreen</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 3px 15px 3px 0; color: #666; text-align: left;">Due Date:</td>
+                                        <td style="padding: 3px 0; font-weight: 500; text-align: right;">9/1/2026</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- 客戶詳細信息 -->
+                            <div class="draggable-element" data-element="customer-detail" style="
+                                position: absolute;
+                                left: 40px;
+                                top: 280px;
+                                width: auto;
+                                padding: 12px 15px;
+                                background: transparent;
+                                border: 2px dashed transparent;
+                                border-left: 3px solid #667eea;
+                                border-radius: 0;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                font-size: 10px;
+                                line-height: 1.8;
+                            ">
+                                <div style="font-weight: bold; color: #667eea; margin-bottom: 6px; font-size: 11px;">Customer Information</div>
+                                <div style="color: #333;">AquaGreen</div>
+                                <div style="color: #666;">Address: 賽馬會</div>
+                            </div>
+
+                            <!-- 表格元件 -->
+                            <div class="draggable-element" data-element="items-table" style="
+                                position: absolute;
+                                left: 40px;
+                                width: 515px;
+                                top: 380px;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                            ">
+                                <table style="
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    font-size: 10px;
+                                ">
+                                    <thead>
+                                        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                            <th style="padding: 10px; text-align: center; border: 1px solid #667eea; width: 40px;">No</th>
+                                            <th style="padding: 10px; text-align: left; border: 1px solid #667eea;">Description</th>
+                                            <th style="padding: 10px; text-align: center; border: 1px solid #667eea; width: 60px;">Qty</th>
+                                            <th style="padding: 10px; text-align: right; border: 1px solid #667eea; width: 100px;">Unit Price</th>
+                                            <th style="padding: 10px; text-align: right; border: 1px solid #667eea; width: 100px;">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr style="background: white;">
+                                            <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: center;">1</td>
+                                            <td style="padding: 8px; border: 1px solid #e5e7eb;">Chop checking system upgrade</td>
+                                            <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: center;">1</td>
+                                            <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">HK$10,000.00</td>
+                                            <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">HK$10,000.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 總計元件 -->
+                            <div class="draggable-element" data-element="total" style="
+                                position: absolute;
+                                left: 305px;
+                                top: 480px;
+                                width: 250px;
+                                padding: 0;
+                                background: transparent;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                font-size: 11px;
+                            ">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                                        <td style="padding: 8px 0; text-align: right; color: #666;">Subtotal:</td>
+                                        <td style="padding: 8px 0; text-align: right; font-weight: 500; padding-left: 20px;">HK$10,000.00</td>
+                                    </tr>
+                                    <tr style="border-bottom: 2px solid #667eea;">
+                                        <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 13px; color: #667eea;">Total:</td>
+                                        <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 13px; color: #667eea; padding-left: 20px;">HK$10,000.00</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- 備註元件 -->
+                            <div class="draggable-element" data-element="notes" style="
+                                position: absolute;
+                                left: 40px;
+                                bottom: 80px;
+                                width: 300px;
+                                padding: 0;
+                                background: transparent;
+                                border: 2px dashed transparent;
+                                border-radius: 4px;
+                                cursor: move;
+                                user-select: none;
+                                transition: all 0.2s;
+                                font-size: 9px;
+                                line-height: 1.6;
+                                color: #666;
+                            ">
+                                <div style="font-weight: bold; margin-bottom: 5px; color: #333; font-size: 10px;">備註</div>
+                                <div>請於到期日前付款。</div>
+                            </div>
+
+                            <!-- 頁腳 -->
+                            <div style="
+                                position: absolute;
+                                left: 40px;
+                                bottom: 40px;
+                                font-size: 9px;
+                                color: #999;
+                            ">
+                                Muselabs Engineering Limited • Bank: HSBC
+                            </div>
+
+                            <!-- 坐標顯示 -->
+                            <div id="coordinateDisplay" style="
+                                position: absolute;
+                                bottom: 10px;
+                                right: 10px;
+                                padding: 8px 12px;
+                                background: rgba(102, 126, 234, 0.9);
+                                color: white;
+                                border-radius: 6px;
+                                font-size: 11px;
+                                font-family: monospace;
+                                display: none;
+                                pointer-events: none;
+                                z-index: 9999;
+                            "></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 排版控制器功能
+        let isDragging = false;
+        let currentX, currentY, initialX, initialY;
+        let draggedElement = null;
+        let elementPositions = {};
+
+        async function openLayoutEditor() {
+            document.getElementById('layoutEditorModal').style.display = 'block';
+            loadLayoutSettings();
+            updatePreview();
+            await loadCompanyLogo(); // 載入公司 Logo
+            await loadElementPositions(); // 🔥 從 Supabase 載入位置
+            initDraggableElements();
+            
+            // 啟用拖動視窗
+            const header = document.getElementById('layoutEditorHeader');
+            const container = document.getElementById('layoutEditorContainer');
+            
+            header.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+        }
+
+        function closeLayoutEditor() {
+            document.getElementById('layoutEditorModal').style.display = 'none';
+        }
+
+        function dragStart(e) {
+            const container = document.getElementById('layoutEditorContainer');
+            isDragging = true;
+            
+            initialX = e.clientX - container.offsetLeft;
+            initialY = e.clientY - container.offsetTop;
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                const container = document.getElementById('layoutEditorContainer');
+                
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+                
+                // 限制範圍
+                const maxX = window.innerWidth - container.offsetWidth;
+                const maxY = window.innerHeight - container.offsetHeight;
+                
+                currentX = Math.max(0, Math.min(currentX, maxX));
+                currentY = Math.max(0, Math.min(currentY, maxY));
+                
+                container.style.left = currentX + 'px';
+                container.style.top = currentY + 'px';
+            }
+        }
+
+        function dragEnd() {
+            isDragging = false;
+        }
+
+        // === 載入公司 Logo ===
+        async function loadCompanyLogo() {
+            try {
+                const company = await db.getCompany();
+                const logo = document.querySelector('[data-element="logo"]');
+                
+                if (company && company.logo_url && logo) {
+                    const logoInner = logo.querySelector('div');
+                    
+                    // 創建圖片元素
+                    const img = document.createElement('img');
+                    img.src = company.logo_url;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'contain';
+                    
+                    // 當圖片載入後，根據原生比例調整容器
+                    img.onload = () => {
+                        const naturalRatio = img.naturalWidth / img.naturalHeight;
+                        
+                        // 獲取當前寬度或使用預設寬度
+                        const currentWidth = logo.offsetWidth || 150;
+                        const newHeight = currentWidth / naturalRatio;
+                        
+                        logo.style.width = currentWidth + 'px';
+                        logo.style.height = newHeight + 'px';
+                        
+                        // 檢查是否有保存的位置
+                        const elementType = 'logo';
+                        if (!elementPositions[elementType]) {
+                            elementPositions[elementType] = {};
+                        }
+                        
+                        // 如果沒有保存尺寸，使用當前尺寸
+                        if (!elementPositions[elementType].width) {
+                            elementPositions[elementType].left = parseInt(logo.style.left) || 40;
+                            elementPositions[elementType].top = parseInt(logo.style.top) || 40;
+                            elementPositions[elementType].width = currentWidth;
+                            elementPositions[elementType].height = newHeight;
+                            
+                            console.log('✅ Logo 已載入並設置預設尺寸:', {
+                                ratio: naturalRatio.toFixed(2),
+                                natural: `${img.naturalWidth}×${img.naturalHeight}`,
+                                display: `${currentWidth}×${Math.round(newHeight)}`
+                            });
+                        } else {
+                            console.log('✅ Logo 已載入，使用已保存尺寸:', elementPositions[elementType]);
+                        }
+                    };
+                    
+                    // 替換 Logo 內容
+                    logoInner.innerHTML = '';
+                    logoInner.appendChild(img);
+                    logoInner.style.background = 'transparent';
+                    logoInner.style.color = 'transparent';
+                } else {
+                    console.log('ℹ️ 未找到公司 Logo，使用預設顯示');
+                }
+            } catch (error) {
+                console.error('載入 Logo 失敗:', error);
+            }
+        }
+
+        // === 元件拖放功能 ===
+        function initDraggableElements() {
+            const elements = document.querySelectorAll('.draggable-element');
+            const container = document.getElementById('pdfPreviewContainer');
+            const coordDisplay = document.getElementById('coordinateDisplay');
+            
+            // 位置已在 openLayoutEditor 中載入，這裡不需要重複載入
+            
+            elements.forEach(element => {
+                const elementType = element.dataset.element;
+                const rect = element.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                
+                // 轉換 right 定位為 left 定位
+                const computedStyle = window.getComputedStyle(element);
+                if (computedStyle.right && computedStyle.right !== 'auto' && !element.style.left) {
+                    const rightValue = parseFloat(computedStyle.right);
+                    const leftValue = containerRect.width - rect.width - rightValue;
+                    element.style.left = leftValue + 'px';
+                    element.style.right = 'auto';
+                }
+                
+                // 如果有儲存的位置，使用它
+                if (elementPositions[elementType]) {
+                    const savedLeft = elementPositions[elementType].left;
+                    const savedTop = elementPositions[elementType].top;
+                    
+                    // 🎯 右對齊元件特殊處理
+                    const rightAlignedElements = ['company-info', 'customer-info', 'total'];
+                    if (rightAlignedElements.includes(elementType)) {
+                        // 對於右對齊元件，left 值是右邊界
+                        // 轉換為 right 定位: right = 595 - left
+                        const rightValue = 595 - savedLeft;
+                        element.style.right = rightValue + 'px';
+                        element.style.left = 'auto';
+                        console.log(`🎯 ${elementType} 使用 right 定位: ${rightValue}px (原 left: ${savedLeft}px)`);
+                    } else {
+                        element.style.left = savedLeft + 'px';
+                        element.style.right = 'auto';
+                    }
+                    
+                    element.style.top = savedTop + 'px';
+                    
+                    // Logo 恢復尺寸
+                    if (elementType === 'logo' && elementPositions[elementType].width) {
+                        element.style.width = elementPositions[elementType].width + 'px';
+                        element.style.height = elementPositions[elementType].height + 'px';
+                    }
+                    
+                    // 標題需要移除 transform
+                    if (elementType === 'title') {
+                        element.style.transform = 'none';
+                    }
+                } else {
+                    // 如果沒有保存的位置,記錄當前的位置和尺寸
+                    elementPositions[elementType] = {
+                        left: parseInt(element.style.left || 0),
+                        top: parseInt(element.style.top || 0),
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height)
+                    };
+                    console.log(`📍 初始化元件 ${elementType}:`, elementPositions[elementType]);
+                }
+                
+                let isDraggingElement = false;
+                let startX, startY, startLeft, startTop;
+                
+                // 滑鼠按下
+                element.addEventListener('mousedown', (e) => {
+                    e.stopPropagation(); // 防止觸發視窗拖動
+                    isDraggingElement = true;
+                    draggedElement = element;
+                    
+                    // 計算起始位置
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    
+                    // 🎯 處理 right 定位的元件
+                    if (element.style.right && element.style.right !== 'auto') {
+                        // 轉換 right 為 left
+                        const rect = element.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+                        startLeft = rect.left - containerRect.left;
+                        element.style.left = startLeft + 'px';
+                        element.style.right = 'auto';
+                    } else {
+                        startLeft = parseInt(element.style.left || 0);
+                    }
+                    
+                    startTop = parseInt(element.style.top || 0);
+                    
+                    // 高亮邊框
+                    element.style.borderColor = '#667eea';
+                    element.style.borderStyle = 'dashed';
+                    element.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+                    element.style.zIndex = '1000';
+                    
+                    // 顯示坐標
+                    coordDisplay.style.display = 'block';
+                    updateCoordinateDisplay(startLeft, startTop, element);
+                    
+                    e.preventDefault();
+                });
+                
+                // 滑鼠移動
+                document.addEventListener('mousemove', (e) => {
+                    if (isDraggingElement && draggedElement === element) {
+                        const deltaX = e.clientX - startX;
+                        const deltaY = e.clientY - startY;
+                        
+                        let newLeft = startLeft + deltaX;
+                        let newTop = startTop + deltaY;
+                        
+                        // 限制在容器內
+                        const containerRect = container.getBoundingClientRect();
+                        const elementRect = element.getBoundingClientRect();
+                        
+                        newLeft = Math.max(0, Math.min(newLeft, containerRect.width - elementRect.width));
+                        newTop = Math.max(0, Math.min(newTop, containerRect.height - elementRect.height));
+                        
+                        element.style.left = newLeft + 'px';
+                        element.style.top = newTop + 'px';
+                        
+                        // 標題需要移除 transform
+                        if (element.dataset.element === 'title') {
+                            element.style.transform = 'none';
+                        }
+                        
+                        // 更新坐標顯示
+                        updateCoordinateDisplay(newLeft, newTop, element);
+                    }
+                });
+                
+                // 滑鼠放開
+                document.addEventListener('mouseup', () => {
+                    if (isDraggingElement && draggedElement === element) {
+                        isDraggingElement = false;
+                        
+                        // 恢復樣式
+                        element.style.borderColor = 'transparent';
+                        element.style.boxShadow = 'none';
+                        element.style.zIndex = 'auto';
+                        
+                        // 隱藏坐標
+                        coordDisplay.style.display = 'none';
+                        
+                        // 儲存位置和尺寸到記憶體
+                        const elementType = element.dataset.element;
+                        const rect = element.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+                        
+                        // 🎯 計算正確的 left 值
+                        let leftValue;
+                        const rightAlignedElements = ['company-info', 'customer-info', 'total'];
+                        
+                        if (rightAlignedElements.includes(elementType)) {
+                            // 對於右對齊元件，計算右邊界座標
+                            // left = 595 - right
+                            if (element.style.right && element.style.right !== 'auto') {
+                                leftValue = 595 - parseInt(element.style.right);
+                            } else {
+                                // 如果使用的是 left 定位，計算實際右邊界
+                                const elementLeft = parseInt(element.style.left || 0);
+                                const elementWidth = rect.width;
+                                leftValue = elementLeft + elementWidth;
+                            }
+                            console.log(`🎯 ${elementType} 保存右邊界: ${leftValue}px`);
+                        } else {
+                            // 左對齊或居中元件直接使用 left 值
+                            leftValue = parseInt(element.style.left || 0);
+                            
+                            // 🎯 標題元件特殊處理：因為使用 text-align: center
+                            // 保存的 left 值是元件左邊界，PDF 生成時會自動計算中心點
+                            if (elementType === 'title') {
+                                console.log(`📝 標題元件保存: left=${leftValue}px, width=${Math.round(rect.width)}px`);
+                                console.log(`   → PDF 將使用中心點: ${leftValue + Math.round(rect.width)/2}px`);
+                            }
+                        }
+                        
+                        elementPositions[elementType] = {
+                            left: leftValue,
+                            top: parseInt(element.style.top || 0),
+                            width: Math.round(rect.width),
+                            height: Math.round(rect.height)
+                        };
+                        
+                        // 🔥 立即保存到 localStorage
+                        saveElementPositions();
+                        console.log('✅ 元件位置已自動保存:', elementType, elementPositions[elementType]);
+                        
+                        draggedElement = null;
+                    }
+                });
+                
+                // 滑鼠懸停效果
+                element.addEventListener('mouseenter', () => {
+                    if (!isDraggingElement) {
+                        element.style.borderColor = '#e0e7ff';
+                        element.style.borderStyle = 'dashed';
+                        
+                        // 如果是 Logo，顯示調整大小手柄
+                        if (element.dataset.element === 'logo') {
+                            const handle = element.querySelector('.resize-handle');
+                            if (handle) handle.style.display = 'block';
+                        }
+                    }
+                });
+                
+                element.addEventListener('mouseleave', () => {
+                    if (!isDraggingElement) {
+                        element.style.borderColor = 'transparent';
+                        
+                        // 隱藏調整大小手柄
+                        if (element.dataset.element === 'logo') {
+                            const handle = element.querySelector('.resize-handle');
+                            if (handle) handle.style.display = 'none';
+                        }
+                    }
+                });
+            });
+            
+            // === Logo 調整大小功能 ===
+            initLogoResize();
+        }
+        
+        function initLogoResize() {
+            const logo = document.querySelector('[data-element="logo"]');
+            if (!logo) return;
+            
+            const handle = logo.querySelector('.resize-handle');
+            if (!handle) return;
+            
+            // 獲取 Logo 圖片的原生比例
+            const logoInner = logo.querySelector('div');
+            let ASPECT_RATIO = 2; // 默認 2:1
+            
+            // 如果有實際圖片，獲取其原生比例
+            const img = logo.querySelector('img');
+            if (img && img.complete) {
+                ASPECT_RATIO = img.naturalWidth / img.naturalHeight;
+            } else if (img) {
+                // 等待圖片載入後更新比例
+                img.onload = () => {
+                    ASPECT_RATIO = img.naturalWidth / img.naturalHeight;
+                    // 根據新比例調整 Logo 尺寸
+                    const currentWidth = logo.offsetWidth;
+                    logo.style.height = (currentWidth / ASPECT_RATIO) + 'px';
+                };
+            }
+            
+            let isResizing = false;
+            let startX, startY, startWidth, startHeight;
+            
+            handle.addEventListener('mousedown', (e) => {
+                e.stopPropagation(); // 防止觸發拖動
+                isResizing = true;
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = logo.offsetWidth;
+                startHeight = logo.offsetHeight;
+                
+                // 重新獲取當前比例（可能圖片已載入）
+                if (img && img.complete && img.naturalWidth && img.naturalHeight) {
+                    ASPECT_RATIO = img.naturalWidth / img.naturalHeight;
+                }
+                
+                logo.style.borderColor = '#667eea';
+                logo.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
+                
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                // 根據對角線距離計算新尺寸
+                const delta = Math.max(deltaX, deltaY);
+                let newWidth = startWidth + delta;
+                
+                // 限制最小和最大尺寸
+                newWidth = Math.max(60, Math.min(newWidth, 300));
+                
+                // 根據原生比例計算高度
+                const newHeight = newWidth / ASPECT_RATIO;
+                
+                logo.style.width = newWidth + 'px';
+                logo.style.height = newHeight + 'px';
+                
+                // 更新座標顯示
+                const coordDisplay = document.getElementById('coordinateDisplay');
+                coordDisplay.style.display = 'block';
+                const ratioText = ASPECT_RATIO.toFixed(2);
+                coordDisplay.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 3px;">Logo 調整大小</div>
+                    <div>寬: ${Math.round(newWidth)}px</div>
+                    <div>高: ${Math.round(newHeight)}px</div>
+                    <div style="margin-top: 3px; font-size: 10px; opacity: 0.8;">🔒 原生比例 ${ratioText}:1</div>
+                `;
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (!isResizing) return;
+                
+                isResizing = false;
+                logo.style.borderColor = 'transparent';
+                logo.style.boxShadow = 'none';
+                
+                // 隱藏座標顯示
+                const coordDisplay = document.getElementById('coordinateDisplay');
+                coordDisplay.style.display = 'none';
+                
+                // 保存 Logo 尺寸
+                const elementType = 'logo';
+                if (!elementPositions[elementType]) {
+                    elementPositions[elementType] = {};
+                }
+                elementPositions[elementType].width = logo.offsetWidth;
+                elementPositions[elementType].height = logo.offsetHeight;
+                
+                handle.style.display = 'none';
+            });
+        }
+
+        function updateCoordinateDisplay(x, y, element) {
+            const coordDisplay = document.getElementById('coordinateDisplay');
+            const elementType = element.dataset.element;
+            const elementName = {
+                'logo': 'Logo',
+                'company-info': '公司信息',
+                'title': '標題',
+                'customer-info': '客戶信息',
+                'customer-detail': '客戶詳細',
+                'invoice-info': '發票信息',
+                'items-table': '項目表格',
+                'total': '總計',
+                'notes': '備註'
+            }[elementType] || elementType;
+            
+            coordDisplay.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 3px;">${elementName}</div>
+                <div>X: ${Math.round(x)}px</div>
+                <div>Y: ${Math.round(y)}px</div>
+            `;
+        }
+
+        async function loadElementPositions() {
+            try {
+                // 從 Supabase 載入位置
+                console.log('📥 從 Supabase 載入元件位置...');
+                const positions = await db.getPDFElementPositions();
+                
+                if (positions && Object.keys(positions).length > 0) {
+                    elementPositions = positions;
+                    console.log('✅ 成功載入', Object.keys(positions).length, '個元件位置');
+                    
+                    // 🔧 檢測並報告位置異常（僅記錄，不自動修復）
+                    const recommendedValues = {
+                        'company-info': 555,
+                        'customer-info': 555,
+                        'total': 555
+                    };
+                    
+                    // 只檢測明顯錯誤的舊值（305, 335）
+                    const oldWrongValues = [305, 335];
+                    let hasOldWrongValues = false;
+                    
+                    for (const [key, recommendedLeft] of Object.entries(recommendedValues)) {
+                        if (elementPositions[key]) {
+                            const currentLeft = elementPositions[key].left;
+                            if (oldWrongValues.includes(currentLeft)) {
+                                console.warn(`⚠️ 發現舊的錯誤位置: ${key}.left = ${currentLeft}, 建議值: ${recommendedLeft}`);
+                                hasOldWrongValues = true;
+                            }
+                        }
+                    }
+                    
+                    // 只在檢測到舊的錯誤值時才提示修復
+                    if (hasOldWrongValues) {
+                        console.log('💡 提示：右對齊元件的建議位置是 555px（右邊界）');
+                        console.log('💡 如需修復，請使用 fix-positions-now.html 工具');
+                    }
+                } else {
+                    console.log('⚠️ Supabase 中沒有位置數據');
+                }
+            } catch (e) {
+                console.error('❌ 載入元件位置失敗:', e);
+            }
+        }
+
+        async function saveElementPositions() {
+            try {
+                // 保存到 Supabase
+                console.log('💾 保存元件位置到 Supabase...', elementPositions);
+                await db.savePDFElementPositions(elementPositions);
+                console.log('✅ 元件位置已保存到 Supabase');
+            } catch (e) {
+                console.error('❌ 儲存元件位置失敗:', e);
+            }
+        }
+
+        function loadLayoutSettings() {
+            const defaults = {
+                margin: 20,
+                primaryColor: '#667eea',
+                companyNameSize: 16,
+                titleSize: 24,
+                sectionTitleSize: 12,
+                tableFontSize: 10
+            };
+            
+            try {
+                const saved = localStorage.getItem('pdfLayoutSettings');
+                const settings = saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
+                
+                document.getElementById('layoutMargin').value = settings.margin;
+                document.getElementById('layoutPrimaryColor').value = settings.primaryColor;
+                document.getElementById('layoutCompanyNameSize').value = settings.companyNameSize;
+                document.getElementById('layoutTitleSize').value = settings.titleSize;
+                document.getElementById('layoutSectionTitleSize').value = settings.sectionTitleSize;
+                document.getElementById('layoutTableFontSize').value = settings.tableFontSize;
+            } catch (e) {
+                console.error('載入設定失敗:', e);
+            }
+        }
+
+        async function saveLayoutSettings(event) {
+            const settings = {
+                margin: parseFloat(document.getElementById('layoutMargin').value),
+                primaryColor: document.getElementById('layoutPrimaryColor').value,
+                companyNameSize: parseFloat(document.getElementById('layoutCompanyNameSize').value),
+                titleSize: parseFloat(document.getElementById('layoutTitleSize').value),
+                sectionTitleSize: parseFloat(document.getElementById('layoutSectionTitleSize').value),
+                tableFontSize: parseFloat(document.getElementById('layoutTableFontSize').value)
+            };
+            
+            // 保存到 Supabase
+            try {
+                await db.savePDFLayoutSettings(settings);
+                await saveElementPositions(); // 同時儲存元件位置
+                
+                // 顯示成功訊息
+                if (event && event.target) {
+                    const btn = event.target;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '✅ 已儲存到 Supabase！';
+                    btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    }, 2000);
+                } else {
+                    alert('✅ 設定已保存到 Supabase！');
+                }
+            } catch (e) {
+                console.error('保存失敗:', e);
+                const errorMsg = e.message || e.toString() || '未知錯誤';
+                alert('❌ 保存失敗: ' + errorMsg);
+            }
+        }
+
+        function resetLayoutSettings() {
+            if (confirm('確定要重置所有設定和元件位置嗎？')) {
+                localStorage.removeItem('pdfLayoutSettings');
+                localStorage.removeItem('pdfElementPositions');
+                elementPositions = {};
+                
+                // 重新載入
+                closeLayoutEditor();
+                setTimeout(() => {
+                    openLayoutEditor();
+                }, 100);
+            }
+        }
+
+        function resetElementPositions() {
+            if (confirm('確定要重置所有元件位置嗎？\n\n這將把所有元件恢復到預設位置。')) {
+                localStorage.removeItem('pdfElementPositions');
+                elementPositions = {};
+                
+                // 重新載入元件
+                closeLayoutEditor();
+                setTimeout(() => {
+                    openLayoutEditor();
+                }, 100);
+            }
+        }
+
+        function updatePreview() {
+            // 更新預覽顏色
+            const primaryColor = document.getElementById('layoutPrimaryColor').value;
+            const elements = document.querySelectorAll('.draggable-element');
+            
+            elements.forEach(element => {
+                const type = element.dataset.element;
+                if (type === 'logo') {
+                    element.style.background = `linear-gradient(135deg, ${primaryColor} 0%, #764ba2 100%)`;
+                } else if (type === 'title') {
+                    const titleDiv = element.querySelector('div');
+                    if (titleDiv) {
+                        titleDiv.style.color = primaryColor;
+                        const line = element.querySelector('div:nth-child(2)');
+                        if (line) {
+                            line.style.background = `linear-gradient(90deg, ${primaryColor}, #764ba2)`;
+                        }
+                    }
+                }
+            });
+            
+            // 更新表格標題顏色
+            const tableHeader = document.querySelector('[data-element="items-table"] thead tr');
+            if (tableHeader) {
+                tableHeader.style.background = `linear-gradient(135deg, ${primaryColor} 0%, #764ba2 100%)`;
+            }
+            
+            // 更新總計顏色
+            const totalAmount = document.querySelector('[data-element="total"] > div:last-child');
+            if (totalAmount) {
+                totalAmount.style.color = primaryColor;
+            }
+        }
+
+        function hexToRgbString(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            if (!result) return 'rgb(102, 126, 234)';
+            
+            const r = parseInt(result[1], 16);
+            const g = parseInt(result[2], 16);
+            const b = parseInt(result[3], 16);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // ESC 鍵關閉
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('layoutEditorModal').style.display === 'block') {
+                closeLayoutEditor();
+            }
+        });
+    </script>
+
     <!-- 載入腳本 -->
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
@@ -80,5 +1327,44 @@
     <script src="documents.js"></script>
     <script src="contacts.js"></script>
     <script src="app.js"></script>
+    
+    <!-- 初始化 Supabase -->
+    <script>
+        // 初始化 Supabase 客戶端
+        window.supabase = window.supabase.createClient(
+            CONFIG.SUPABASE.URL,
+            CONFIG.SUPABASE.ANON_KEY
+        );
+        console.log('✅ Supabase 客戶端已初始化');
+        
+        // 🚀 預載入 PDF 字體
+        (async function preloadPDFFont(retryCount = 0) {
+            try {
+                // 預載入字體到 documentManager 的緩存中
+                if (window.documentManager && window.documentManager.loadFont) {
+                    console.log('🔤 開始預載入 PDF 字體...');
+                    const startTime = performance.now();
+                    
+                    // 創建臨時 PDF 對象來載入字體
+                    const { jsPDF } = window.jspdf;
+                    const tempPdf = new jsPDF();
+                    
+                    await documentManager.loadFont(tempPdf);
+                    
+                    const endTime = performance.now();
+                    const loadTime = ((endTime - startTime) / 1000).toFixed(2);
+                    console.log(`✅ PDF 字體預載入完成! 耗時: ${loadTime}秒`);
+                    console.log('💡 後續生成 PDF 將使用緩存字體，速度更快');
+                } else if (retryCount < 10) {
+                    // 最多重試10次，每次間隔500ms
+                    setTimeout(() => preloadPDFFont(retryCount + 1), 500);
+                } else {
+                    console.warn('⚠️ documentManager 載入超時，字體將在首次生成 PDF 時載入');
+                }
+            } catch (error) {
+                console.warn('⚠️ 字體預載入失敗 (不影響功能):', error.message);
+            }
+        })();
+    </script>
 </body>
 </html>

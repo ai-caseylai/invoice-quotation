@@ -10,6 +10,10 @@ CREATE TABLE companies (
     address TEXT,
     email TEXT,
     logo_url TEXT,
+    bank_name TEXT,
+    bank_account TEXT,
+    bank_code TEXT,
+    bank_swift TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

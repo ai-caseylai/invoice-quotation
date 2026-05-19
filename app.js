@@ -218,6 +218,26 @@ class BookkeepingApp {
                 <h1>⚙️ 設定</h1>
                 <div class="settings-form">
                     <h2>公司資訊</h2>
+                    
+                    <div class="form-group">
+                        <label>公司 Logo</label>
+                        <div class="logo-upload-container">
+                            ${this.company?.logo_url ? `
+                                <div class="logo-preview">
+                                    <img src="${this.company.logo_url}" alt="Company Logo" style="max-width: 200px; max-height: 100px;">
+                                </div>
+                            ` : '<p style="color: #999;">尚未上傳 Logo</p>'}
+                            <input type="file" id="settingCompanyLogo" accept="image/*" style="margin-top: 10px;">
+                            <small style="color: #999; display: block; margin-top: 5px;">
+                                支援 JPG、PNG 格式，建議尺寸 200x100px<br>
+                                ${this.company?.logo_url?.startsWith('data:') ? 
+                                    '<span style="color: #e74c3c;">⚠️ 當前使用本地儲存，建議設定 Supabase Storage 以減少 PDF 檔案大小</span>' : 
+                                    '<span style="color: #27ae60;">✅ 已使用雲端儲存</span>'
+                                }
+                            </small>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label>公司名稱</label>
                         <input type="text" id="settingCompanyName" value="${this.company?.name || ''}">
@@ -234,6 +254,25 @@ class BookkeepingApp {
                         <label>電子郵箱</label>
                         <input type="email" id="settingCompanyEmail" value="${this.company?.email || ''}">
                     </div>
+                    
+                    <h2 style="margin-top: 30px;">銀行資料</h2>
+                    <div class="form-group">
+                        <label>銀行名稱</label>
+                        <input type="text" id="settingBankName" value="${this.company?.bank_name || ''}" placeholder="例如：OCBC Bank">
+                    </div>
+                    <div class="form-group">
+                        <label>銀行帳號</label>
+                        <input type="text" id="settingBankAccount" value="${this.company?.bank_account || ''}" placeholder="例如：161 Queen's Road Central, HK">
+                    </div>
+                    <div class="form-group">
+                        <label>銀行代碼</label>
+                        <input type="text" id="settingBankCode" value="${this.company?.bank_code || ''}" placeholder="例如：Acct#: 136-125-831">
+                    </div>
+                    <div class="form-group">
+                        <label>SWIFT Code / BIC/SWIFT</label>
+                        <input type="text" id="settingBankSwift" value="${this.company?.bank_swift || ''}" placeholder="例如：OCBCHKHH">
+                    </div>
+                    
                     <button class="btn-primary" onclick="app.saveSettings()">
                         💾 儲存設定
                     </button>
@@ -266,16 +305,143 @@ class BookkeepingApp {
             name: document.getElementById('settingCompanyName').value,
             phone: document.getElementById('settingCompanyPhone').value,
             address: document.getElementById('settingCompanyAddress').value,
-            email: document.getElementById('settingCompanyEmail').value
+            email: document.getElementById('settingCompanyEmail').value,
+            bank_name: document.getElementById('settingBankName').value,
+            bank_account: document.getElementById('settingBankAccount').value,
+            bank_code: document.getElementById('settingBankCode').value,
+            bank_swift: document.getElementById('settingBankSwift').value
         };
 
         try {
+            // 處理 Logo 上傳
+            const logoInput = document.getElementById('settingCompanyLogo');
+            if (logoInput.files && logoInput.files[0]) {
+                const file = logoInput.files[0];
+                
+                // 驗證檔案大小（限制 2MB）
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('❌ Logo 檔案過大，請選擇小於 2MB 的圖片');
+                    return;
+                }
+                
+                // 顯示上傳進度
+                const uploadMsg = document.createElement('div');
+                uploadMsg.textContent = '正在上傳 Logo...';
+                uploadMsg.style.cssText = 'position:fixed;top:20px;right:20px;background:#667eea;color:white;padding:15px 25px;border-radius:8px;z-index:9999;box-shadow:0 4px 15px rgba(0,0,0,0.2)';
+                document.body.appendChild(uploadMsg);
+                
+                try {
+                    // 上傳到 Supabase Storage
+                    const fileName = `logo-${Date.now()}.${file.name.split('.').pop()}`;
+                    const { data: uploadData, error: uploadError } = await window.supabase.storage
+                        .from('company-assets')
+                        .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+                    
+                    if (uploadError) {
+                        // 如果 bucket 不存在，嘗試創建
+                        if (uploadError.message.includes('not found')) {
+                            uploadMsg.textContent = '首次使用，正在初始化儲存空間...';
+                            
+                            // 創建 bucket
+                            const { error: bucketError } = await window.supabase.storage.createBucket('company-assets', {
+                                public: true,
+                                fileSizeLimit: 2097152 // 2MB
+                            });
+                            
+                            if (bucketError && !bucketError.message.includes('already exists')) {
+                                throw bucketError;
+                            }
+                            
+                            // 重新上傳
+                            const { data: retryData, error: retryError } = await window.supabase.storage
+                                .from('company-assets')
+                                .upload(fileName, file, {
+                                    cacheControl: '3600',
+                                    upsert: false
+                                });
+                            
+                            if (retryError) throw retryError;
+                        } else {
+                            throw uploadError;
+                        }
+                    }
+                    
+                    // 獲取公開 URL
+                    const { data: urlData } = window.supabase.storage
+                        .from('company-assets')
+                        .getPublicUrl(fileName);
+                    
+                    data.logo_url = urlData.publicUrl;
+                    uploadMsg.textContent = '✅ Logo 上傳成功！';
+                    setTimeout(() => uploadMsg.remove(), 2000);
+                    
+                } catch (storageError) {
+                    console.error('Supabase Storage 上傳失敗:', storageError);
+                    uploadMsg.remove();
+                    
+                    // 降級：使用 Base64（但壓縮圖片）
+                    uploadMsg.textContent = '正在壓縮圖片...';
+                    document.body.appendChild(uploadMsg);
+                    
+                    const compressedBase64 = await this.compressImage(file, 200, 100, 0.8);
+                    data.logo_url = compressedBase64;
+                    
+                    uploadMsg.textContent = '⚠️ 已使用本地儲存（建議設定 Supabase Storage）';
+                    setTimeout(() => uploadMsg.remove(), 3000);
+                }
+            }
+            
             await db.updateCompany(data);
             this.company = { ...this.company, ...data };
             alert('✅ 設定已儲存！');
+            
+            // 重新載入設定頁面以顯示新的 Logo
+            await this.loadSettings();
+            
         } catch (error) {
+            console.error('儲存設定失敗:', error);
             alert('❌ 儲存失敗：' + error.message);
         }
+    }
+    
+    // 壓縮圖片（降級方案）
+    async compressImage(file, maxWidth, maxHeight, quality) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // 計算縮放比例
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                    if (height > maxHeight) {
+                        width *= maxHeight / height;
+                        height = maxHeight;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     }
 
     createNewDocument(type) {

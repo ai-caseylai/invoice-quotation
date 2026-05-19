@@ -313,6 +313,159 @@ class Database {
             select: '*'
         });
     }
+
+    // ==================== PDF 排版設定 ====================
+
+    /**
+     * 獲取 PDF 排版設定
+     * @returns {Promise<Object>} 排版設定對象
+     */
+    async getPDFLayoutSettings() {
+        try {
+            console.log('📥 從 Supabase 讀取 PDF 排版設定...');
+            const settings = await this.query('pdf_settings', {
+                select: '*',
+                limit: 1,
+                order: 'updated_at.desc'
+            });
+            
+            if (settings && settings.length > 0) {
+                console.log('✅ PDF 排版設定讀取成功:', settings[0]);
+                return settings[0].settings;
+            }
+            
+            console.log('⚠️ 沒有找到 PDF 排版設定，返回預設值');
+            return this.getDefaultLayoutSettings();
+        } catch (error) {
+            console.error('❌ 讀取 PDF 排版設定失敗:', error);
+            return this.getDefaultLayoutSettings();
+        }
+    }
+
+    /**
+     * 保存 PDF 排版設定
+     * @param {Object} settings - 排版設定對象
+     * @returns {Promise<Object>} 保存的設定
+     */
+    async savePDFLayoutSettings(settings) {
+        try {
+            console.log('💾 保存 PDF 排版設定到 Supabase...');
+            
+            // 檢查是否已有設定
+            const existing = await this.query('pdf_settings', {
+                limit: 1,
+                order: 'updated_at.desc'
+            });
+            
+            let result;
+            if (existing && existing.length > 0) {
+                // 更新現有設定
+                console.log('更新現有設定，ID:', existing[0].id);
+                result = await this.update('pdf_settings', existing[0].id, {
+                    settings: settings,
+                    updated_at: new Date().toISOString()
+                });
+            } else {
+                // 創建新設定
+                console.log('創建新設定');
+                result = await this.insert('pdf_settings', {
+                    settings: settings,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+            }
+            
+            console.log('✅ PDF 排版設定保存成功');
+            return result;
+        } catch (error) {
+            console.error('❌ 保存 PDF 排版設定失敗:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 獲取 PDF 元件位置
+     * @returns {Promise<Object>} 元件位置對象
+     */
+    async getPDFElementPositions() {
+        try {
+            console.log('📥 從 Supabase 讀取 PDF 元件位置...');
+            const positions = await this.query('pdf_element_positions', {
+                select: '*',
+                limit: 1,
+                order: 'updated_at.desc'
+            });
+            
+            if (positions && positions.length > 0) {
+                console.log('✅ PDF 元件位置讀取成功，共', Object.keys(positions[0].positions).length, '個元件');
+                return positions[0].positions;
+            }
+            
+            console.log('⚠️ 沒有找到 PDF 元件位置，返回空對象');
+            return {};
+        } catch (error) {
+            console.error('❌ 讀取 PDF 元件位置失敗:', error);
+            return {};
+        }
+    }
+
+    /**
+     * 保存 PDF 元件位置
+     * @param {Object} positions - 元件位置對象
+     * @returns {Promise<Object>} 保存的位置
+     */
+    async savePDFElementPositions(positions) {
+        try {
+            console.log('💾 保存 PDF 元件位置到 Supabase...');
+            console.log('元件數量:', Object.keys(positions).length);
+            
+            // 檢查是否已有位置數據
+            const existing = await this.query('pdf_element_positions', {
+                limit: 1,
+                order: 'updated_at.desc'
+            });
+            
+            let result;
+            if (existing && existing.length > 0) {
+                // 更新現有位置
+                console.log('更新現有位置，ID:', existing[0].id);
+                result = await this.update('pdf_element_positions', existing[0].id, {
+                    positions: positions,
+                    updated_at: new Date().toISOString()
+                });
+            } else {
+                // 創建新位置
+                console.log('創建新位置記錄');
+                result = await this.insert('pdf_element_positions', {
+                    positions: positions,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+            }
+            
+            console.log('✅ PDF 元件位置保存成功');
+            return result;
+        } catch (error) {
+            console.error('❌ 保存 PDF 元件位置失敗:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 獲取預設排版設定
+     * @returns {Object} 預設設定
+     */
+    getDefaultLayoutSettings() {
+        return {
+            margin: 20,
+            primaryColor: '#667eea',
+            companyNameSize: 18,
+            titleSize: 28,
+            sectionTitleSize: 14,
+            textSize: 11,
+            smallTextSize: 9
+        };
+    }
 }
 
 // 創建全域資料庫實例
