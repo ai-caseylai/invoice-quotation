@@ -1,6 +1,7 @@
 name = "invoice-pdf-api"
 main = "src/index.ts"
 compatibility_date = "2025-06-06"
+account_id = "3498e268169ccb1bd1ad614210804529"
 
 # R2 bucket bindings
 [[r2_buckets]]
