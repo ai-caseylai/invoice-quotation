@@ -1,0 +1,32 @@
+{
+  "type": "receipt",
+  "invoice_no": "REC26-0003",
+  "output_filename": "REC26-0003_FotanBusinessAssociation_簽到系統.pdf",
+  "date": "26/06/2026",
+  "customer": "Fotan Business Association / 火炭商會",
+  "attention": "Joey Lai",
+  "tel": "852 6071 5475",
+  "mobile": "",
+  "email": "",
+  "address": "",
+  "logo": "/Users/apple/Downloads/cropped-Muse-Labs-Engineering-Ltd-Logo-PNG-1-90x90.png",
+  "project_title": "簽到系統12個月服務費連PayMe收費收據PDF升級",
+  "items": [
+    {
+      "no": 1,
+      "description": "簽到系統12個月服務費連PayMe收費收據PDF升級",
+      "qty": 1,
+      "unit_price": 2500
+    }
+  ],
+  "subtotal": 2500,
+  "discount": 0,
+  "total": 2500,
+  "deposit": 0,
+  "deposit_label": "",
+  "payment_terms": "COD",
+  "remark": "",
+  "chop": "/Users/apple/Downloads/musleabs eng chop.png",
+  "signature": "/Users/apple/Downloads/signiture.png",
+  "signature_name": "CASEY LAI<br/>CEO"
+}

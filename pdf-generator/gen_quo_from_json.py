@@ -57,12 +57,13 @@ class SignatureBlock(Flowable):
     """自訂 Flowable：用 canvas 絕對座標繪製簽名區（div 方式）
     座標原點 (0,0) = 左下角，y 向上遞增
     """
-    def __init__(self, block_width, block_height, sig_name, chop_path=None, debug=False):
+    def __init__(self, block_width, block_height, sig_name, chop_path=None, sig_image=None, debug=False):
         Flowable.__init__(self)
         self.width = block_width
         self.height = block_height
         self.sig_name = sig_name
         self.chop_path = chop_path
+        self.sig_image = sig_image
         self.debug = debug
 
     def draw(self):
@@ -82,20 +83,44 @@ class SignatureBlock(Flowable):
 
         line_y = h - 5*mm
 
-        # [#1] 左簽名線
-        c.setStrokeColor(colors.black)
-        c.setLineWidth(0.5)
-        c.line(0, line_y, 80*mm, line_y)
+        # [#1] 左簽名線 (如有簽名圖片則不畫線)
+        if not (self.sig_image and os.path.exists(self.sig_image)):
+            c.setStrokeColor(colors.black)
+            c.setLineWidth(0.5)
+            c.line(0, line_y, 80*mm, line_y)
 
-        if self.debug:
-            c.setFillColor(colors.red)
-            c.setFont('Helvetica-Bold', 7)
-            c.drawString(0, line_y + 2*mm, "[#1] left sig line")
+            if self.debug:
+                c.setFillColor(colors.red)
+                c.setFont('Helvetica-Bold', 7)
+                c.drawString(0, line_y + 2*mm, "[#1] left sig line")
+
+        # [#1.5] 簽名圖片(放在左簽名線上)
+        if self.sig_image and os.path.exists(self.sig_image):
+            try:
+                sig_img = PILImage.open(self.sig_image)
+                siw, sih = sig_img.size
+                sig_w = 55*mm
+                r = sig_w / siw
+                sig_h = sih * r
+                sig_x = 0
+                sig_y = line_y - sig_h + 40*mm
+                c.drawImage(self.sig_image, sig_x, sig_y, width=sig_w, height=sig_h, mask='auto')
+                if self.debug:
+                    c.setStrokeColor(colors.red)
+                    c.setLineWidth(0.5)
+                    c.rect(sig_x, sig_y, sig_w, sig_h)
+                    c.setFillColor(colors.red)
+                    c.setFont('Helvetica-Bold', 7)
+                    c.drawString(sig_x, sig_y - 3*mm, "[#1.5] sig image")
+            except:
+                pass
 
         # [#5] 簽名者名稱
         c.setFillColor(colors.black)
         c.setFont(CHINESE_FONT, 8)
-        c.drawString(0, line_y - 4*mm, self.sig_name)
+        name_lines = self.sig_name.replace('<br/>', '\n').split('\n')
+        for i, line in enumerate(name_lines):
+            c.drawString(0, line_y - 4*mm - i * 4*mm, line)
 
         if self.debug:
             c.setFillColor(colors.red)
@@ -103,9 +128,10 @@ class SignatureBlock(Flowable):
             c.drawString(0, line_y - 4*mm - 3*mm, "[#5]")
 
         # [#7] 簽名並蓋公司印章
+        name_total_lines = len(name_lines)
         c.setFillColor(colors.black)
         c.setFont(CHINESE_FONT, 8)
-        c.drawString(0, line_y - 10*mm, "簽名並蓋公司印章")
+        c.drawString(0, line_y - 4*mm - name_total_lines * 4*mm, "簽名並蓋公司印章")
 
         if self.debug:
             c.setFillColor(colors.red)
@@ -121,8 +147,8 @@ class SignatureBlock(Flowable):
                 r = chop_w / iw
                 chop_h = ih * r
                 # 放在線的下方，置中
-                chop_x = 88*mm
-                chop_y = line_y - chop_h - 1*mm
+                chop_x = 58*mm
+                chop_y = line_y - chop_h - 1*mm + 20*mm
                 c.drawImage(self.chop_path, chop_x, chop_y, width=chop_w, height=chop_h, mask='auto')
                 if self.debug:
                     c.setStrokeColor(colors.red)
@@ -159,6 +185,14 @@ class SignatureBlock(Flowable):
 def create_quotation_pdf(data, output_path=None):
     if output_path is None:
         output_path = data.get("output_filename", "quotation.pdf")
+
+    doc_type = data.get("type", "invoice")
+    type_config = {
+        "receipt": {"title": "收據", "number_label": "收據號碼"},
+        "invoice": {"title": "發票", "number_label": "發票號碼"},
+        "quotation": {"title": "報價單", "number_label": "報價單號碼"},
+    }
+    config = type_config.get(doc_type, type_config["invoice"])
 
     doc = SimpleDocTemplate(output_path, pagesize=A4,
         rightMargin=15*mm, leftMargin=15*mm, topMargin=15*mm, bottomMargin=20*mm)
@@ -211,6 +245,7 @@ def create_quotation_pdf(data, output_path=None):
                 ('TOPPADDING', (0,0), (-1,-1), 0),
                 ('BOTTOMPADDING', (0,0), (-1,-1), 0),
                 ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('LEFTPADDING', (1,0), (1,0), -40*mm),
                 ('RIGHTPADDING', (0,0), (-1,-1), 0),
             ]))
             story.append(header_table)
@@ -222,15 +257,15 @@ def create_quotation_pdf(data, output_path=None):
         story.append(Paragraph(COMPANY_ADDRESS, company_style))
         story.append(Paragraph(COMPANY_CONTACT, company_style))
 
-    story.append(Spacer(1, 2*mm))
-    story.append(Paragraph("發票", quo_title))
     dbg_marker(story, 2, "Company Header END")
 
     # ===== SECTION 2: INFO TABLE =====
+    story.append(Spacer(1, 8*mm))
     dbg_marker(story, 3, "Info Table START")
     info_data = [
+        [Paragraph("", val), Paragraph("", val), Paragraph("", val), Paragraph("", val)],
         [Paragraph("\u5ba2\u6236", label), Paragraph(data["customer"], val),
-         Paragraph("\u767c\u7968\u865f\u78bc", label), Paragraph(data["invoice_no"], val)],
+         Paragraph(config["number_label"], label), Paragraph(data["invoice_no"], val)],
         [Paragraph("\u806f\u7d61\u4eba", label), Paragraph(data.get("attention", ""), val),
          Paragraph("\u65e5\u671f", label), Paragraph(data["date"], val)],
         [Paragraph("\u96fb\u8a71", label), Paragraph(data.get("tel", ""), val),
@@ -243,10 +278,12 @@ def create_quotation_pdf(data, output_path=None):
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('TOPPADDING', (0,0), (-1,-1), 3), ('BOTTOMPADDING', (0,0), (-1,-1), 3),
         ('LEFTPADDING', (0,0), (-1,-1), 0), ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('SPAN', (1,3), (3,3)), ('SPAN', (1,4), (3,4)),
+        ('SPAN', (1,4), (3,4)), ('SPAN', (1,5), (3,5)),
     ]))
     story.append(info_table)
-    story.append(Spacer(1, 5*mm))
+    story.append(Spacer(1, 3*mm))
+    story.append(Paragraph(config["title"], quo_title))
+    story.append(Spacer(1, 2*mm))
     dbg_marker(story, 4, "Info Table END")
 
     # ===== SECTION 3: PROJECT TITLE =====
@@ -279,7 +316,8 @@ def create_quotation_pdf(data, output_path=None):
             f"{item['unit_price']:,.0f}",
             f"{item.get('qty', 1) * item['unit_price']:,.0f}",
         ])
-        row_heights.append(10*mm + len(sub_items) * 5.8*mm)
+        br_count = desc.count("<br/>")
+        row_heights.append(10*mm + (len(sub_items) + br_count) * 5.8*mm)
 
     it = Table(table_data, colWidths=[12*mm, 88*mm, 14*mm, 32*mm, 34*mm], rowHeights=row_heights)
     it.setStyle(TableStyle([
@@ -339,21 +377,25 @@ def create_quotation_pdf(data, output_path=None):
     dbg_marker(story, 10, "Totals + Payment Terms Table END")
 
     # ===== SECTION 6: SIGNATURE BLOCK (div) =====
-    dbg_marker(story, 11, "3x Spacer(8mm)")
+    dbg_marker(story, 11, "Spacers before signature")
+    story.append(Spacer(1, 20*mm))
     story.append(Spacer(1, 8*mm))
     story.append(Spacer(1, 8*mm))
     story.append(Spacer(1, 8*mm))
 
     sig_name = data.get("signature_name", "CASEY LAI")
     chop_path = data.get("chop")
+    sig_image = data.get("signature", "")
     page_usable_w = 180*mm  # A4 - 15mm*2 margins
 
+    sig_block_height = 40*mm if sig_image else 20*mm
     dbg_marker(story, 12, "SignatureBlock START")
     sig_block = SignatureBlock(
         block_width=page_usable_w,
-        block_height=20*mm,
+        block_height=sig_block_height,
         sig_name=sig_name,
         chop_path=chop_path,
+        sig_image=sig_image,
         debug=DEBUG,
     )
     story.append(sig_block)
@@ -367,7 +409,7 @@ def create_quotation_pdf(data, output_path=None):
     dbg_marker(story, 15, "Bank Info END")
 
     doc.build(story)
-    print(f"Quotation generated: {output_path}")
+    print(f"{config['title']} generated: {output_path}")
 
 
 if __name__ == "__main__":

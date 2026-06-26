@@ -1,0 +1,26 @@
+{
+  "invoice_no": "INV026-0443",
+  "output_filename": "INV026-0443_DTSL_CSTCB.pdf",
+  "date": "03/06/2026",
+  "customer": "DTSL Group Limited",
+  "attention": "",
+  "tel": "",
+  "email": "",
+  "address": "Unit 20, 9/F, No.1 Hung To Road, Kwun Tong, Kowloon, Hong Kong",
+  "items": [
+    {
+      "no": 1,
+      "description": "Support services<br/>第三屆大灣區青少年人工智能及網絡安全挑戰賽",
+      "qty": 1,
+      "unit_price": 7000
+    }
+  ],
+  "subtotal": 7000,
+  "discount": 0,
+  "total": 7000,
+  "payment_terms": "Advanced payment",
+  "chop": "Muse Lab chop.png",
+  "signature": "/Users/apple/Downloads/signiture.png",
+  "signature_name": "CASEY LAI",
+  "logo": "/Users/apple/Downloads/cropped-Muse-Labs-Engineering-Ltd-Logo-PNG-1-90x90.png"
+}

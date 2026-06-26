@@ -1,0 +1,32 @@
+{
+  "type": "receipt",
+  "invoice_no": "REC26-0002",
+  "output_filename": "REC26-0002_PaulTang_TVP.pdf",
+  "date": "21/05/2026",
+  "customer": "PAUL TANG & CO LTD",
+  "attention": "Ms. Tang Siu Fan",
+  "tel": "56146477",
+  "mobile": "",
+  "email": "info@wlptcpa.com",
+  "address": "Flat/Rm 405, 4/F, Tung Ning Bldg, 249 - 251 Des Voeux Rd Central, H.K.",
+  "logo": "/Users/apple/Downloads/cropped-Muse-Labs-Engineering-Ltd-Logo-PNG-1-90x90.png",
+  "project_title": "Development fee for TVP project",
+  "items": [
+    {
+      "no": 1,
+      "description": "Development fee for TVP project",
+      "qty": 1,
+      "unit_price": 40000
+    }
+  ],
+  "subtotal": 40000,
+  "discount": 0,
+  "total": 40000,
+  "deposit": 0,
+  "deposit_label": "",
+  "payment_terms": "Received with thanks",
+  "remark": "",
+  "chop": "/Users/apple/Downloads/musleabs eng chop.png",
+  "signature": "/Users/apple/Downloads/signiture.png",
+  "signature_name": "CASEY LAI<br/>CEO"
+}
