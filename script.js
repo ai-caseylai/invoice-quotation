@@ -59,60 +59,17 @@ const PDF_API_URL = 'https://invoice-pdf-api.ai-caseylai.workers.dev/api/pdf/gen
 
 // 生成PDF — 優先使用 Cloudflare Worker API，失敗時降級為客戶端 jsPDF
 async function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    try {
-        // 先嘗試從 Supabase Storage 載入字體
-        console.log('正在從 Supabase 載入字體檔案...');
-        let response = await fetch(`${SUPABASE_URL}/storage/v1/object/public/fonts/NotoSansSC-Regular.ttf`);
-        
-        // 如果 Supabase 失敗，降級使用本地字體
-        if (!response.ok) {
-            console.log('Supabase 載入失敗，改用本地字體檔案...');
-            response = await fetch('./NotoSansSC-Regular.ttf');
-            
-            if (!response.ok) {
-                throw new Error('字體檔案載入失敗');
-            }
-        } else {
-            console.log('✅ 成功從 Supabase 載入字體！');
-        }
-        
-        const arrayBuffer = await response.arrayBuffer();
-        
-        // 轉換為Base64
-        console.log('正在轉換字體檔案...');
-        const fontBase64 = btoa(
-            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-        );
-        
-        console.log('正在新增字體到PDF...');
-        // 新增中文字體
-        doc.addFileToVFS("NotoSansSC.ttf", fontBase64);
-        doc.addFont("NotoSansSC.ttf", "NotoSans", "normal");
-        doc.setFont("NotoSans", "normal");
-        
-        console.log('✅ 字體載入成功！');
-    } catch (error) {
-        console.error('❌ 字體載入失敗:', error);
-        alert('字體載入失敗，請確保：\n1. 使用 http://localhost:8000 存取\n2. 或字體已上傳到 Supabase Storage\n3. 使用本地伺服器執行');
-        return;
-    }
-    
     // 获取表单数据
     const companyName = document.getElementById('companyName').value;
     const companyPhone = document.getElementById('companyPhone').value;
     const companyAddress = document.getElementById('companyAddress').value;
     const companyEmail = document.getElementById('companyEmail').value;
-    
     const customerName = document.getElementById('customerName').value;
     const customerContact = document.getElementById('customerContact').value;
     const customerPhone = document.getElementById('customerPhone').value;
     const docNumber = document.getElementById('docNumber').value;
     const notes = document.getElementById('notes').value;
-    
-    // 获取项目明细
+
     const items = [];
     const itemRows = document.querySelectorAll('.item-row');
     itemRows.forEach(row => {
@@ -123,14 +80,11 @@ async function generatePDF() {
             price: parseFloat(inputs[2].value) || 0
         });
     });
-    
-    // 计算总金额
-    let totalAmount = 0;
-    items.forEach(item => {
-        totalAmount += item.quantity * item.price;
-    });
 
-    // 嘗試使用 Cloudflare Worker API 生成專業 PDF
+    let totalAmount = 0;
+    items.forEach(item => { totalAmount += item.quantity * item.price; });
+
+    // 優先使用 Cloudflare Worker API
     try {
         const workerPayload = {
             type: currentTab,
@@ -177,7 +131,24 @@ async function generatePDF() {
         console.warn('Worker API unavailable, falling back to jsPDF:', e.message);
     }
 
-    // 客戶端 jsPDF 降級方案
+    // === 客戶端 jsPDF 降級方案 ===
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    try {
+        let response = await fetch(`${SUPABASE_URL}/storage/v1/object/public/fonts/NotoSansSC-Regular.ttf`);
+        if (!response.ok) throw new Error('字體載入失敗');
+        const arrayBuffer = await response.arrayBuffer();
+        const fontBase64 = btoa(
+            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        doc.addFileToVFS("NotoSansSC.ttf", fontBase64);
+        doc.addFont("NotoSansSC.ttf", "NotoSans", "normal");
+        doc.setFont("NotoSans", "normal");
+    } catch (e) {
+        console.warn('Font load failed, using default font:', e.message);
+    }
+
     // 標題
     const title = currentTab === 'invoice' ? '發 票' : '報 價 單';
     doc.setFontSize(22);
