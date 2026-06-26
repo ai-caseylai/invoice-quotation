@@ -3,18 +3,21 @@ main = "src/index.ts"
 compatibility_date = "2025-06-06"
 account_id = "3498e268169ccb1bd1ad614210804529"
 
+# Routes — API on same domain as Pages frontend
+[[routes]]
+pattern = "invoice.techforliving.net/api/*"
+zone_id = "b73df921b8b38bc1382883ca5a76b83e"
+
 # R2 bucket bindings
 [[r2_buckets]]
 binding = "ASSETS"
 bucket_name = "invoice-assets"
 
+# D1 database
 [[d1_databases]]
 binding = "DB"
 database_name = "invoice-db"
 database_id = "acc456f4-16ce-4a9e-a58e-5a38714c3704"
-
-# Routes — API on same domain as Pages frontend
-routes = [{ pattern = "invoice.techforliving.net/api/*", zone_id = "b73df921b8b38bc1382883ca5a76b83e" }]
 
 [observability]
 enabled = true
