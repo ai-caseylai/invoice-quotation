@@ -17,6 +17,12 @@ app.use('*', async (c, next) => { if (!warmed) { prewarmFont(); warmed = true; }
 
 // ─── Public routes ───
 app.get('/api/health', (c) => c.json({ status: 'ok', version: '2.0.0' }));
+app.get('/api/debug-auth', (c) => {
+  const auth = c.req.header('Authorization') || '(none)';
+  const token = auth.replace('Bearer ', '');
+  const valid = token !== '(none)' && token.split('.').length === 2 && token.split('.')[0] === 'inv_7xK9mP2qR5vL8nB3wJ6fD4hT1cY0a';
+  return c.json({ auth, token: token.substring(0, 30), valid, allHeaders: Object.fromEntries(c.req.raw.headers.entries()) });
+});
 app.post('/api/auth/login', loginHandler);
 
 // CORS for PDF
@@ -25,7 +31,7 @@ app.options('/api/pdf/generate', (c) => new Response(null, {
 }));
 
 // ─── Auth middleware ───
-const PUBLIC = new Set(['/api/auth/login', '/api/health', '/api/pdf/generate']);
+const PUBLIC = new Set(['/api/auth/login', '/api/health', '/api/pdf/generate', '/api/debug-auth']);
 app.use('/api/*', async (c, next) => {
   if (PUBLIC.has(c.req.path)) return next();
   return authMiddleware(c, next);
