@@ -1,0 +1,15 @@
+name = "invoice-pdf-api"
+main = "src/index.ts"
+compatibility_date = "2025-06-06"
+
+# R2 bucket bindings
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "invoice-assets"
+
+# Routes (optional custom domain)
+# routes = [{ pattern = "api.muselabs-eng.com/*", zone_id = "..." }]
+
+[observability]
+enabled = true
+head_sampling_rate = 1

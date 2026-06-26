@@ -30,5 +30,7 @@ SUPABASE-SETUP.md
 nohup.out
 /tmp/
 
-# Node modules (如果之後需要)
+# Node modules
 node_modules/
+cf-worker/node_modules/
+cf-worker/.wrangler/

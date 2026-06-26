@@ -501,12 +501,60 @@ class DocumentManager {
 
             // 生成 PDF
             console.log('📝 步驟 5: 開始生成 PDF...');
+
+            // 嘗試使用 Cloudflare Worker API
+            try {
+                const workerPayload = {
+                    type: doc.type,
+                    invoice_no: doc.doc_number,
+                    date: doc.date || new Date().toISOString().split('T')[0],
+                    customer: contact?.name || '',
+                    attention: contact?.contact_person || '',
+                    tel: contact?.phone || '',
+                    email: contact?.email || '',
+                    address: contact?.address || '',
+                    items: (items || []).map((item, i) => ({
+                        no: i + 1,
+                        description: item.description || '',
+                        qty: parseFloat(item.quantity) || 1,
+                        unit_price: parseFloat(item.unit_price) || 0,
+                    })),
+                    subtotal: parseFloat(doc.subtotal) || 0,
+                    total: parseFloat(doc.total) || 0,
+                    payment_terms: doc.notes || '',
+                    signature_name: company?.name || 'CASEY LAI',
+                };
+
+                const resp = await fetch('https://invoice-pdf-api.ai-caseylai.workers.dev/api/pdf/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(workerPayload),
+                });
+
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${doc.doc_number || 'document'}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    console.log('✅ PDF generated via Cloudflare Worker');
+                    return;
+                }
+                console.warn('Worker API returned non-OK, falling back to jsPDF');
+            } catch (e) {
+                console.warn('Worker API unavailable, falling back to jsPDF:', e.message);
+            }
+
             console.log('傳遞的參數:');
             console.log('  - doc:', doc ? '✓' : '✗');
             console.log('  - contact:', contact ? '✓' : '✗');
             console.log('  - items:', items.length);
             console.log('  - company:', company ? '✓' : '✗');
-            
+
             await this.createPDF(doc, contact, items, company);
             
             console.log('========================================');

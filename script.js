@@ -54,7 +54,10 @@ function resetForm() {
     }
 }
 
-// 生成PDF - 從 Supabase 載入字體
+// Cloudflare Worker PDF API
+const PDF_API_URL = 'https://invoice-pdf-api.ai-caseylai.workers.dev/api/pdf/generate';
+
+// 生成PDF — 優先使用 Cloudflare Worker API，失敗時降級為客戶端 jsPDF
 async function generatePDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -126,7 +129,55 @@ async function generatePDF() {
     items.forEach(item => {
         totalAmount += item.quantity * item.price;
     });
-    
+
+    // 嘗試使用 Cloudflare Worker API 生成專業 PDF
+    try {
+        const workerPayload = {
+            type: currentTab,
+            invoice_no: docNumber,
+            date: new Date().toLocaleDateString('zh-HK'),
+            customer: customerName,
+            attention: customerContact,
+            tel: customerPhone,
+            email: companyEmail,
+            address: '',
+            items: items.map((item, i) => ({
+                no: i + 1,
+                description: item.name,
+                qty: item.quantity,
+                unit_price: item.price,
+            })),
+            subtotal: totalAmount,
+            total: totalAmount,
+            payment_terms: notes,
+            signature_name: companyName,
+        };
+
+        const resp = await fetch(PDF_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(workerPayload),
+        });
+
+        if (resp.ok) {
+            const blob = await resp.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentTab === 'invoice' ? '發票' : '報價單'}_${docNumber}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            console.log('✅ PDF generated via Cloudflare Worker');
+            return;
+        }
+        console.warn('Worker API returned error, falling back to jsPDF');
+    } catch (e) {
+        console.warn('Worker API unavailable, falling back to jsPDF:', e.message);
+    }
+
+    // 客戶端 jsPDF 降級方案
     // 標題
     const title = currentTab === 'invoice' ? '發 票' : '報 價 單';
     doc.setFontSize(22);
