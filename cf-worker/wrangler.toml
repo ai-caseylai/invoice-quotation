@@ -8,6 +8,11 @@ account_id = "3498e268169ccb1bd1ad614210804529"
 binding = "ASSETS"
 bucket_name = "invoice-assets"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "invoice-db"
+database_id = "acc456f4-16ce-4a9e-a58e-5a38714c3704"
+
 # Routes (optional custom domain)
 # routes = [{ pattern = "api.muselabs-eng.com/*", zone_id = "..." }]
 
