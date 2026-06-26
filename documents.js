@@ -837,8 +837,8 @@ class DocumentManager {
         const logoBottom = positions.logo ? positions.logo.top + positions.logo.height : null;
         const titleBottom = positions.title ? positions.title.top + positions.title.height : null;
         const companyBottom = positions['company-info'] ? positions['company-info'].top + positions['company-info'].height : null;
-        const threeLineOffset = 9 * 1.333 * 1.3 * 3;
-        const addressTargetY = alignBottomY + threeLineOffset;
+        const debugLineOffset = 9 * 1.333 * 1.3 * 3;
+        const addressTargetY = alignBottomY + debugLineOffset;
         
         console.log(`  - Logo 底部 (px): ${logoBottom}`);
         console.log(`  - 標題底部 (px): ${titleBottom}`);
