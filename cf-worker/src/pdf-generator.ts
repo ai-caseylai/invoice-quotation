@@ -1,530 +1,218 @@
-import { PDFDocument, StandardFonts, rgb, PDFPage, PageSizes } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import type { R2Bucket } from '@cloudflare/workers-types';
 import { loadChineseFont } from './font-loader';
-import type { PdfRequest, DocumentType } from './types';
-import { COMPANY, TYPE_CONFIG, COLORS, FONT_SIZES } from './types';
+import { COMPANY } from './types';
 
-// ─── helpers ────────────────────────────────────────────
+// ─── A4 page ────────────────────────────────────────────────
+const PAGE_W = 595.28;
+const PAGE_H = 841.89;
+const BLACK = rgb(0, 0, 0);
+const THIN = 0.5;
 
-function hexToRgb(hex: string): [number, number, number] {
-  const v = parseInt(hex.slice(1), 16);
-  return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
-}
+// ─── Table column boundaries ────────────────────────────────
+const TBL = { L: 50, R: 527, NO_END: 90, QTY: 330, QTY_END: 370, PRICE_END: 447 };
 
-function pt(mm: number): number { return mm * 2.8346457; }
-const A4_W = PageSizes.A4[0]; // 595.28
-const A4_H = PageSizes.A4[1]; // 841.89
-const MARGIN = pt(15); // ~42.5pt
-const USABLE_W = A4_W - 2 * MARGIN; // ~510pt
-const USABLE_RIGHT = A4_W - MARGIN; // ~552.8pt
+// ─── Y coordinates ───────────────────────────────────────────
+const Y = {
+  logo:      PAGE_H - 100,
+  company:   PAGE_H - 72,
+  addr1:     PAGE_H - 93,
+  addr2:     PAGE_H - 110,
+  contact:   PAGE_H - 130,
+  separator: PAGE_H - 140,
+  title:     PAGE_H - 165,
+  custStart: PAGE_H - 195,
+  custStep:  20,
+};
 
-function wrapText(text: string, maxWidth: number, font: any, fontSize: number): string[] {
-  // Simple character-width-based line wrapping for CJK text
-  // We estimate CJK char width ≈ fontSize, Latin char width ≈ fontSize * 0.55
-  const lines: string[] = [];
-  let current = '';
-  let currentW = 0;
+// ─── Font sizes ──────────────────────────────────────────────
+const FS = { company: 13, title: 18, addr: 10, label: 10, table: 10, small: 9, bank: 10 };
 
-  for (const ch of text) {
-    const isCJK = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch);
-    const chW = isCJK ? fontSize : fontSize * 0.55;
-    if (currentW + chW > maxWidth && current.length > 0) {
-      lines.push(current);
-      current = ch;
-      currentW = chW;
-    } else {
-      current += ch;
-      currentW += chW;
-    }
-  }
-  if (current) lines.push(current);
-  return lines.length ? lines : [''];
-}
+// ─── Helpers ─────────────────────────────────────────────────
 
-function measureWidth(text: string, font: any, fontSize: number): number {
+function cjkWidth(text: string, size: number): number {
   let w = 0;
-  for (const ch of text) {
-    const isCJK = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch);
-    w += isCJK ? fontSize : fontSize * 0.55;
-  }
+  for (const ch of text) { w += /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(ch) ? size : size * 0.55; }
   return w;
 }
 
-// ─── image loading ──────────────────────────────────────
+function drawText(page: any, text: string, x: number, y: number, font: any, size: number, anchor = 'left') {
+  if (!text) return;
+  const w = cjkWidth(text, size);
+  let dx = x;
+  if (anchor === 'center') dx = x - w / 2;
+  else if (anchor === 'right') dx = x - w;
+  page.drawText(text, { x: dx, y, font, size, color: BLACK });
+}
 
-async function loadImage(doc: PDFDocument, bucket: R2Bucket | undefined, path: string): Promise<{ data: Uint8Array; type: 'png' | 'jpg' } | null> {
-  if (!path) return null;
+function hLine(page: any, x1: number, x2: number, y: number, thickness = THIN) {
+  page.drawLine({ start: { x: x1, y }, end: { x: x2, y }, thickness, color: BLACK });
+}
+
+function vLine(page: any, x: number, y1: number, y2: number) {
+  page.drawLine({ start: { x, y: y1 }, end: { x, y: y2 }, thickness: THIN, color: BLACK });
+}
+
+// ─── Image loading ──────────────────────────────────────────
+
+async function loadImage(doc: PDFDocument, bucket: R2Bucket | undefined, key: string): Promise<any> {
+  if (!key || !bucket) return null;
   try {
-    // Try R2 first
-    if (bucket) {
-      const key = path.replace(/^.*[\\/]/, '');
-      const obj = await bucket.get(key);
-      if (obj) {
-        const buf = new Uint8Array(await obj.arrayBuffer());
-        const ext = key.split('.').pop()?.toLowerCase();
-        return { data: buf, type: ext === 'jpg' || ext === 'jpeg' ? 'jpg' : 'png' };
-      }
-    }
-    // Fallback: try to fetch from Supabase Storage
-    const url = `https://fcydqlusmtpgmwvfnopm.supabase.co/storage/v1/object/public/assets/${path}`;
-    const resp = await fetch(url);
-    if (resp.ok) {
-      const buf = new Uint8Array(await resp.arrayBuffer());
-      return { data: buf, type: 'png' };
-    }
-  } catch {}
-  return null;
+    const obj = await bucket.get(key);
+    if (!obj) return null;
+    const buf = new Uint8Array(await obj.arrayBuffer());
+    const ext = key.split('.').pop()?.toLowerCase();
+    return ext === 'jpg' || ext === 'jpeg' ? await doc.embedJpg(buf) : await doc.embedPng(buf);
+  } catch { return null; }
 }
 
-// ─── drawing helpers ────────────────────────────────────
+// ─── Main generator ─────────────────────────────────────────
 
-function drawTableRow(
-  page: PDFPage, y: number, rowH: number,
-  cells: { text: string; x: number; w: number; align?: 'left' | 'center' | 'right'; font: any; fontSize: number; bold?: boolean }[],
-  bgColor?: [number, number, number]
-) {
-  if (bgColor) {
-    const colWidths = cells.map(c => c.w);
-    let cx = cells[0].x;
-    page.drawRectangle({
-      x: cx, y: y - rowH, width: colWidths.reduce((a, b) => a + b, 0), height: rowH,
-      color: rgb(bgColor[0], bgColor[1], bgColor[2]),
-    });
-  }
-
-  for (const cell of cells) {
-    const tx = cell.align === 'center' ? cell.x + cell.w / 2 - measureWidth(cell.text, cell.font, cell.fontSize) / 2
-              : cell.align === 'right' ? cell.x + cell.w - measureWidth(cell.text, cell.font, cell.fontSize) - 2
-              : cell.x + 2;
-    page.drawText(cell.text, {
-      x: tx,
-      y: y - rowH + (rowH - cell.fontSize) / 2 + 1,
-      size: cell.fontSize,
-      font: cell.font,
-      color: rgb(0, 0, 0),
-    });
-  }
-}
-
-// ─── main generator ─────────────────────────────────────
-
-export async function generatePdf(
-  data: PdfRequest,
-  bucket?: R2Bucket
-): Promise<Uint8Array> {
+export async function generatePdf(data: any, bucket?: R2Bucket): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const page = doc.addPage([A4_W, A4_H]);
 
-  // Load Chinese font from CDN (same approach as secretarysystem)
-  let cnFont: any;
-  try {
-    const fontBuf = await loadChineseFont();
-    cnFont = await doc.embedFont(fontBuf);
-  } catch {
-    cnFont = await doc.embedFont(StandardFonts.Helvetica);
+  // Load fonts
+  let cnFont: any, helv: any;
+  try { const fb = await loadChineseFont(); cnFont = await doc.embedFont(fb); } catch { cnFont = helv; }
+  helv = await doc.embedFont(StandardFonts.Helvetica);
+
+  const f = cnFont;
+
+  // Load images
+  const logo = await loadImage(doc, bucket, data.logo || 'logo2-removebg-preview.png');
+  const chop = await loadImage(doc, bucket, data.chop || 'musleabs eng chop.png');
+  const sig = await loadImage(doc, bucket, data.signature || 'signiture.png');
+
+  const items = data.items || [];
+  const isQuotation = data.type === 'quotation';
+  const title = isQuotation ? 'QUOTATION' : 'INVOICE';
+  const numberLabel = isQuotation ? 'Quotation No. :' : 'Invoice No. :';
+
+  const page = doc.addPage([PAGE_W, PAGE_H]);
+
+  // ═══ HEADER ═══
+  if (logo) page.drawImage(logo, { x: 57, y: Y.logo, width: 46, height: 37 });
+
+  drawText(page, data.company_name || 'Muse Labs Engineering Limited', PAGE_W / 2, Y.company, f, FS.company, 'center');
+  drawText(page, data.company_address || COMPANY.address, PAGE_W / 2, Y.addr1, helv, FS.addr, 'center');
+  drawText(page, data.company_contact || COMPANY.contact, PAGE_W / 2, Y.contact, helv, FS.addr, 'center');
+
+  hLine(page, TBL.L, TBL.R, Y.separator);
+  drawText(page, title, PAGE_W / 2, Y.title, helv, FS.title, 'center');
+
+  // ═══ CUSTOMER INFO ═══
+  const y0 = Y.custStart;
+  const s = Y.custStep;
+
+  drawText(page, 'Customer:', TBL.L, y0, helv, FS.label);
+  drawText(page, data.customer || '', 120, y0, f, FS.label);
+  drawText(page, numberLabel, 340, y0, helv, FS.label);
+  drawText(page, data.invoice_no || '', 420, y0, helv, FS.label);
+
+  const y1 = y0 - s;
+  drawText(page, 'Attn:', TBL.L, y1, helv, FS.label);
+  drawText(page, data.attention || '', 120, y1, f, FS.label);
+  drawText(page, 'Date:', 340, y1, helv, FS.label);
+  drawText(page, data.date || '', 420, y1, helv, FS.label);
+
+  const y2 = y1 - s;
+  drawText(page, 'Tel:', TBL.L, y2, helv, FS.label);
+  drawText(page, data.tel || '', 120, y2, helv, FS.label);
+  drawText(page, 'E-mail:', 340, y2, helv, FS.label);
+  drawText(page, data.email || '', 420, y2, helv, FS.label);
+
+  const y3 = y2 - s;
+  drawText(page, 'Add:', TBL.L, y3, helv, FS.label);
+  drawText(page, data.address || '', 120, y3, f, FS.label);
+
+  // ═══ ITEMS TABLE ═══
+  const HDR_H = 26;
+  const ROW_H = 36;
+  const tableTop = y3 - 3 * s;
+
+  let tableBot = tableTop - HDR_H - items.length * ROW_H;
+
+  hLine(page, TBL.L, TBL.R, tableTop);
+  hLine(page, TBL.L, TBL.R, tableTop - HDR_H);
+  hLine(page, TBL.L, TBL.R, tableBot);
+
+  for (const x of [TBL.L, TBL.NO_END, TBL.QTY, TBL.QTY_END, TBL.PRICE_END, TBL.R]) {
+    vLine(page, x, tableTop, tableBot);
   }
 
-  const helv = await doc.embedFont(StandardFonts.Helvetica);
-  const helvBold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const font = cnFont;  // primary: Chinese-capable font
-  const fontB = helvBold;
-  const fontH = helv;
+  const hdrY = tableTop - HDR_H + 7;
+  drawText(page, 'No.', (TBL.L + TBL.NO_END) / 2, hdrY, helv, FS.table, 'center');
+  drawText(page, 'Description', (TBL.NO_END + TBL.QTY) / 2, hdrY, helv, FS.table, 'center');
+  drawText(page, 'Qty', (TBL.QTY + TBL.QTY_END) / 2, hdrY, helv, FS.table, 'center');
+  drawText(page, 'Unit Price', (TBL.QTY_END + TBL.PRICE_END) / 2, hdrY, helv, FS.table, 'center');
+  drawText(page, 'Subtotal', (TBL.PRICE_END + TBL.R) / 2, hdrY, helv, FS.table, 'center');
 
-  const cfg = TYPE_CONFIG[data.type as DocumentType];
-  const [hdrR, hdrG, hdrB] = hexToRgb(COLORS.HEADER);
-  const [thBgR, thBgG, thBgB] = hexToRgb(COLORS.TABLE_HEADER_BG);
-  const [lineR, lineG, lineB] = hexToRgb(COLORS.LINE);
-  const [grayR, grayG, grayB] = hexToRgb(COLORS.GRAY);
+  let rowY = tableTop - HDR_H;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const yd = rowY - ROW_H / 2 + 3;
 
-  let curY = A4_H - MARGIN; // start from top
+    if (i > 0) hLine(page, TBL.L, TBL.R, rowY);
 
-  // ═══ SECTION 1: HEADER with LOGO ═══
-  const logoData = data.logo ? await loadImage(doc, bucket, data.logo) : null;
-  let logoX = MARGIN;
-  let logoW = 0;
+    drawText(page, String(item.no ?? i + 1), (TBL.L + TBL.NO_END) / 2, yd, helv, FS.table, 'center');
+    drawText(page, (item.description || item.desc || '').replace(/\n/g, ' '), TBL.NO_END + 6, yd, f, FS.table);
+    drawText(page, String(item.qty ?? ''), (TBL.QTY + TBL.QTY_END) / 2, yd, helv, FS.table, 'center');
 
-  if (logoData) {
-    try {
-      const img = logoData.type === 'png'
-        ? await doc.embedPng(logoData.data)
-        : await doc.embedJpg(logoData.data);
-      const dim = img.scale(1); // native
-      const targetH = pt(18);
-      const scale = targetH / dim.height;
-      logoW = Math.min(dim.width * scale, pt(55));
-      const logoH = dim.height * scale;
-      const logoY = curY - logoH;
-      page.drawImage(img, { x: logoX, y: logoY, width: logoW, height: logoH });
-    } catch {}
+    const up = item.unit_price != null ? Number(item.unit_price).toLocaleString('en-US') : '';
+    drawText(page, up, TBL.PRICE_END - 4, yd, helv, FS.table, 'right');
+
+    const sub = item.qty != null && item.unit_price != null
+      ? Number(item.qty * item.unit_price).toLocaleString('en-US') : '';
+    drawText(page, sub, TBL.R - 4, yd, helv, FS.table, 'right');
+
+    rowY -= ROW_H;
   }
 
-  // Company info right of logo
-  const infoX = MARGIN + logoW + pt(3);
-  const infoW = USABLE_RIGHT - infoX;
+  // ═══ FOOTER ═══
+  let y = tableBot - 26;
 
-  page.drawText(COMPANY.name, {
-    x: infoX, y: curY - pt(0.5), size: FONT_SIZES.TITLE, font: fontB,
-    color: rgb(hdrR, hdrG, hdrB),
-  });
-  const addrY = curY - pt(5);
-  page.drawText(COMPANY.address, {
-    x: infoX, y: addrY, size: FONT_SIZES.COMPANY, font: fontH,
-    color: rgb(grayR, grayG, grayB),
-  });
-  const contactY = addrY - pt(3);
-  page.drawText(COMPANY.contact, {
-    x: infoX, y: contactY, size: FONT_SIZES.SUB_SMALL, font: fontH,
-    color: rgb(grayR, grayG, grayB),
-  });
+  const subtotal = data.subtotal || items.reduce((s: number, it: any) => s + (Number(it.qty) || 0) * (Number(it.unit_price) || 0), 0);
+  const subtotalStr = subtotal.toLocaleString('en-US');
+  drawText(page, 'Subtotal (HKD)', TBL.PRICE_END - 4, y, helv, FS.table, 'right');
+  drawText(page, subtotalStr, TBL.R - 4, y, helv, FS.table, 'right');
 
-  curY = contactY - pt(2);
-
-  // ═══ SECTION 2: INFO TABLE ═══
-  const infoTop = curY - pt(8);
-  const colX = [MARGIN, MARGIN + pt(22), MARGIN + pt(22) + pt(64), MARGIN + pt(22) + pt(64) + pt(24)];
-  const colW = [pt(22), pt(64), pt(24), pt(70)];
-  const tableW = colW.reduce((a, b) => a + b, 0);
-  const rowH = pt(6);
-
-  type InfoRow = { label: string; labelX: number; value: string; valueX: number; valueW: number };
-
-  const infoRows: InfoRow[] = [
-    { label: '\u5BA2\u6236', labelX: colX[0], value: data.customer || '', valueX: colX[1], valueW: colW[1] },
-    { label: '\u806F\u7D61\u4EBA', labelX: colX[0], value: data.attention || '', valueX: colX[1], valueW: colW[1] },
-    { label: '\u96FB\u8A71', labelX: colX[0], value: data.tel || '', valueX: colX[1], valueW: colW[1] },
-    { label: '\u624B\u6A5F\u865F', labelX: colX[0], value: data.mobile || '', valueX: colX[1], valueW: colW[1] + colW[2] + colW[3] },
-    { label: '\u5730\u5740', labelX: colX[0], value: data.address || '', valueX: colX[1], valueW: colW[1] + colW[2] + colW[3] },
-  ];
-
-  const rightLabels = [
-    { label: cfg.numberLabel, value: data.invoice_no || '', labelX: colX[2], valueX: colX[3], valueW: colW[3] },
-    { label: '\u65E5\u671F', value: data.date || '', labelX: colX[2], valueX: colX[3], valueW: colW[3] },
-    { label: '\u96FB\u90F5', value: data.email || '', labelX: colX[2], valueX: colX[3], valueW: colW[3] },
-  ];
-
-  const infoRowCount = infoRows.length;
-  for (let i = 0; i < infoRowCount; i++) {
-    const r = infoRows[i];
-    const y = infoTop - i * rowH;
-
-    // Left label
-    page.drawText(r.label, {
-      x: r.labelX, y: y - pt(1), size: FONT_SIZES.LABEL, font: font,
-      color: rgb(grayR, grayG, grayB),
-    });
-    // Left value
-    page.drawText(r.value || '', {
-      x: r.valueX + pt(1), y: y - pt(1), size: FONT_SIZES.VALUE, font: font,
-    });
-
-    // Right side labels
-    if (i < rightLabels.length) {
-      const rl = rightLabels[i];
-      page.drawText(rl.label, {
-        x: rl.labelX, y: y - pt(1), size: FONT_SIZES.LABEL, font: font,
-        color: rgb(grayR, grayG, grayB),
-      });
-      page.drawText(rl.value || '', {
-        x: rl.valueX, y: y - pt(1), size: FONT_SIZES.VALUE, font: font,
-      });
+  // Remark
+  y -= 82;
+  drawText(page, 'Remark:', TBL.L, y, helv, FS.label);
+  if (data.remark) {
+    for (const line of data.remark.split('\n')) {
+      y -= 14;
+      drawText(page, line, TBL.L, y, f, FS.small);
     }
   }
 
-  curY = infoTop - infoRowCount * rowH - pt(3);
+  // Payment Terms
+  y -= 22;
+  drawText(page, 'Payment Terms:', TBL.L, y, helv, FS.label);
+  drawText(page, data.payment_terms || '', 155, y, f, FS.label);
 
-  // Document title
-  const titleW = measureWidth(cfg.title, font, FONT_SIZES.TITLE);
-  const titleX = MARGIN + (USABLE_W - titleW) / 2;
-  page.drawText(cfg.title, {
-    x: titleX, y: curY, size: FONT_SIZES.TITLE, font: font,
-    color: rgb(hdrR, hdrG, hdrB),
-  });
-  curY -= pt(6);
+  // Signature
+  y -= 50;
+  hLine(page, 53, 173, y + 7, 1.0);
+  hLine(page, 330, 450, y + 7, 1.0);
 
-  // ═══ SECTION 3: PROJECT TITLE ═══
-  if (data.project_title) {
-    const pw = measureWidth(data.project_title, font, FONT_SIZES.PROJECT);
-    page.drawText(data.project_title, {
-      x: MARGIN + (USABLE_W - pw) / 2, y: curY, size: FONT_SIZES.PROJECT, font: font,
-      color: rgb(hdrR, hdrG, hdrB),
-    });
-    curY -= pt(7);
-  }
+  if (sig) page.drawImage(sig, { x: 61, y: y - 33, width: 88, height: 97 });
+  if (chop) page.drawImage(chop, { x: (PAGE_W - 55) / 2, y: y + 32, width: 55, height: 55 });
 
-  // ═══ SECTION 4: ITEMS TABLE ═══
-  const itemColW = [pt(12), pt(88), pt(14), pt(32), pt(34)];
-  const itemColX = [
-    MARGIN,
-    MARGIN + pt(12),
-    MARGIN + pt(12 + 88),
-    MARGIN + pt(12 + 88 + 14),
-    MARGIN + pt(12 + 88 + 14 + 32),
-  ];
+  drawText(page, data.signature_name || 'CASEY LAI', 53, y - 8, helv, FS.label);
 
-  // Table header
-  const thY = curY;
-  const thRowH = pt(9);
-  const thCells = [
-    { text: 'No', x: itemColX[0], w: itemColW[0], align: 'center' as const, font: fontB, fontSize: FONT_SIZES.ITEM_HEADER, bold: true },
-    { text: 'Description', x: itemColX[1], w: itemColW[1], align: 'center' as const, font: fontB, fontSize: FONT_SIZES.ITEM_HEADER, bold: true },
-    { text: 'Qty', x: itemColX[2], w: itemColW[2], align: 'center' as const, font: fontB, fontSize: FONT_SIZES.ITEM_HEADER, bold: true },
-    { text: '(HKD)\nUnit price', x: itemColX[3], w: itemColW[3], align: 'center' as const, font: fontB, fontSize: FONT_SIZES.ITEM_HEADER, bold: true },
-    { text: '(HKD)\nSubtotal', x: itemColX[4], w: itemColW[4], align: 'center' as const, font: fontB, fontSize: FONT_SIZES.ITEM_HEADER, bold: true },
-  ];
+  y -= 18;
+  drawText(page, '簽名並蓋公司印章', 53, y, f, FS.label);
+  drawText(page, '簽名並蓋公司印章', 330, y + 8, f, FS.label);
 
-  drawTableRow(page, thY, thRowH, thCells, [thBgR, thBgG, thBgB]);
-  let itemY = thY - thRowH;
-
-  // Grid lines — draw header box
-  const gridX = itemColX[0];
-  const gridW = itemColW.reduce((a, b) => a + b, 0);
-
-  page.drawRectangle({
-    x: gridX, y: itemY, width: gridW, height: thRowH,
-    borderColor: rgb(lineR, lineG, lineB), borderWidth: 0.5, color: undefined,
-  });
-
-  for (const item of data.items) {
-    const desc = item.description;
-    const subItems = item.sub_items || [];
-    const descLines = [desc, ...subItems.map(s => `  - ${s}`)];
-
-    const rowHt = pt(10) + subItems.length * pt(5.8);
-    const itemY1 = itemY - rowHt;
-
-    // Background
-    page.drawRectangle({
-      x: gridX, y: itemY1, width: gridW, height: rowHt,
-      borderColor: rgb(lineR, lineG, lineB), borderWidth: 0.5,
-    });
-
-    // Cell dividers
-    for (let ci = 1; ci < itemColX.length; ci++) {
-      page.drawLine({
-        start: { x: itemColX[ci], y: itemY1 },
-        end: { x: itemColX[ci], y: itemY },
-        color: rgb(lineR, lineG, lineB), thickness: 0.5,
-      });
-    }
-
-    // No
-    const noW = measureWidth(String(item.no), font, FONT_SIZES.ITEM);
-    page.drawText(String(item.no), {
-      x: itemColX[0] + (itemColW[0] - noW) / 2, y: itemY1 + rowHt / 2 - FONT_SIZES.ITEM / 2,
-      size: FONT_SIZES.ITEM, font: font,
-    });
-
-    // Description (multi-line)
-    for (let li = 0; li < descLines.length; li++) {
-      page.drawText(descLines[li], {
-        x: itemColX[1] + pt(1), y: itemY - pt(4) - li * pt(5.8),
-        size: FONT_SIZES.ITEM, font: font,
-      });
-    }
-
-    // Qty (right-aligned)
-    const qtyS = String(item.qty);
-    const qtyW = measureWidth(qtyS, fontH, FONT_SIZES.ITEM);
-    page.drawText(qtyS, {
-      x: itemColX[3] - pt(1) - qtyW, y: itemY1 + rowHt / 2 - FONT_SIZES.ITEM / 2,
-      size: FONT_SIZES.ITEM, font: fontH,
-    });
-
-    // Unit price
-    const upS = item.unit_price.toLocaleString('en-US');
-    const upW = measureWidth(upS, fontH, FONT_SIZES.ITEM);
-    page.drawText(upS, {
-      x: itemColX[4] - pt(1) - upW, y: itemY1 + rowHt / 2 - FONT_SIZES.ITEM / 2,
-      size: FONT_SIZES.ITEM, font: fontH,
-    });
-
-    // Subtotal
-    const subS = (item.qty * item.unit_price).toLocaleString('en-US');
-    const subW = measureWidth(subS, fontH, FONT_SIZES.ITEM);
-    page.drawText(subS, {
-      x: USABLE_RIGHT - pt(2) - subW, y: itemY1 + rowHt / 2 - FONT_SIZES.ITEM / 2,
-      size: FONT_SIZES.ITEM, font: fontH,
-    });
-
-    itemY = itemY1;
-  }
-
-  curY = itemY - pt(6);
-
-  // ═══ SECTION 5: TOTALS + PAYMENT TERMS ═══
-  const totalsColW = [pt(80), pt(32), pt(32), pt(36)];
-  const totalsColX = [
-    MARGIN,
-    MARGIN + pt(80),
-    MARGIN + pt(80 + 32),
-    MARGIN + pt(80 + 32 + 32),
-  ];
-
-  const subtotal = data.subtotal || data.items.reduce((s, i) => s + (i.qty || 1) * (i.unit_price || 0), 0);
-  const total = data.total || subtotal;
-
-  // Subtotal row
-  page.drawText('Subtotal:', {
-    x: totalsColX[2] + totalsColW[2] - measureWidth('Subtotal:', fontB, FONT_SIZES.ITEM) - pt(2),
-    y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontB,
-  });
-  const subS = subtotal.toLocaleString('en-US');
-  page.drawText(subS, {
-    x: totalsColX[3] + totalsColW[3] - measureWidth(subS, fontH, FONT_SIZES.ITEM) - pt(2),
-    y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontH,
-  });
-  curY -= pt(5);
-
-  // Total row
-  page.drawText('TOTAL:', {
-    x: totalsColX[2] + totalsColW[2] - measureWidth('TOTAL:', fontB, FONT_SIZES.ITEM) - pt(2),
-    y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontB,
-  });
-  const totS = total.toLocaleString('en-US');
-  page.drawText(totS, {
-    x: totalsColX[3] + totalsColW[3] - measureWidth(totS, fontH, FONT_SIZES.ITEM) - pt(2),
-    y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontH,
-  });
-  curY -= pt(5);
-
-  // Discount if any
-  if (data.discount) {
-    const discAmt = Math.round(total * data.discount / 100);
-    page.drawText(`Discount ${data.discount}%:`, {
-      x: totalsColX[2] + totalsColW[2] - measureWidth(`Discount ${data.discount}%:`, fontB, FONT_SIZES.ITEM) - pt(2),
-      y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontB,
-    });
-    const dS = `-${discAmt.toLocaleString('en-US')}`;
-    page.drawText(dS, {
-      x: totalsColX[3] + totalsColW[3] - measureWidth(dS, fontH, FONT_SIZES.ITEM) - pt(2),
-      y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontH,
-    });
-    curY -= pt(5);
-
-    const netT = total - discAmt;
-    page.drawText('Net Total:', {
-      x: totalsColX[2] + totalsColW[2] - measureWidth('Net Total:', fontB, FONT_SIZES.ITEM) - pt(2),
-      y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontB,
-    });
-    const ntS = netT.toLocaleString('en-US');
-    page.drawText(ntS, {
-      x: totalsColX[3] + totalsColW[3] - measureWidth(ntS, fontH, FONT_SIZES.ITEM) - pt(2),
-      y: curY - FONT_SIZES.ITEM, size: FONT_SIZES.ITEM, font: fontH,
-    });
-    curY -= pt(5);
-  }
-
-  // Payment terms
-  if (data.payment_terms) {
-    curY -= pt(3);
-    page.drawText('Payment Terms:', {
-      x: MARGIN, y: curY, size: FONT_SIZES.ITEM, font: font,
-    });
-    curY -= pt(5);
-
-    const ptLines = (data.payment_terms || '').split('\n');
-    for (const line of ptLines) {
-      page.drawText(line, {
-        x: MARGIN, y: curY, size: FONT_SIZES.ITEM, font: font,
-      });
-      curY -= pt(5);
-    }
-  }
-
-  // ═══ SECTION 6: SIGNATURE BLOCK ═══
-  curY -= pt(20);
-
-  // Left signature line
-  const sigY = curY;
-  page.drawLine({
-    start: { x: MARGIN, y: sigY },
-    end: { x: MARGIN + pt(80), y: sigY },
-    color: rgb(0, 0, 0), thickness: 0.5,
-  });
-
-  // Right signature line
-  page.drawLine({
-    start: { x: MARGIN + pt(115), y: sigY },
-    end: { x: USABLE_RIGHT, y: sigY },
-    color: rgb(0, 0, 0), thickness: 0.5,
-  });
-
-  // Signature image
-  if (data.signature) {
-    const sigImg = await loadImage(doc, bucket, data.signature);
-    if (sigImg) {
-      try {
-        const img = sigImg.type === 'png'
-          ? await doc.embedPng(sigImg.data)
-          : await doc.embedJpg(sigImg.data);
-        const dim = img.scale(1);
-        const sigW = pt(55);
-        const scale = sigW / dim.width;
-        const sigH = dim.height * scale;
-        page.drawImage(img, {
-          x: MARGIN,
-          y: sigY - sigH + pt(40), // adjust position
-          width: sigW,
-          height: sigH,
-        });
-      } catch {}
-    }
-  }
-
-  // Signature name
-  const sigName = data.signature_name || 'CASEY LAI';
-  const nameLines = sigName.replace(/<br\/>/g, '\n').split('\n');
-  for (let i = 0; i < nameLines.length; i++) {
-    page.drawText(nameLines[i], {
-      x: MARGIN, y: sigY - pt(4) - i * pt(4),
-      size: FONT_SIZES.SIGNATURE, font: font,
-    });
-  }
-  page.drawText('\u7C3D\u540D\u4E26\u84CB\u516C\u53F8\u5370\u7AE0', {
-    x: MARGIN, y: sigY - pt(4) - nameLines.length * pt(4),
-    size: FONT_SIZES.SIGNATURE, font: font,
-  });
-
-  // Chop
-  if (data.chop) {
-    const chopImg = await loadImage(doc, bucket, data.chop);
-    if (chopImg) {
-      try {
-        const img = chopImg.type === 'png'
-          ? await doc.embedPng(chopImg.data)
-          : await doc.embedJpg(chopImg.data);
-        const dim = img.scale(1);
-        const chopW = pt(25);
-        const scale = chopW / dim.width;
-        const chopH = dim.height * scale;
-        page.drawImage(img, {
-          x: MARGIN + pt(58),
-          y: sigY - chopH - pt(1) + pt(20),
-          width: chopW,
-          height: chopH,
-        });
-      } catch {}
-    }
-  }
-
-  // Right label
-  page.drawText('\u7C3D\u540D\u4E26\u84CB\u516C\u53F8\u5370\u7AE0', {
-    x: MARGIN + pt(115), y: sigY - pt(4),
-    size: FONT_SIZES.SIGNATURE, font: font,
-  });
-
-  curY = sigY - pt(30);
-
-  // ═══ SECTION 7: BANK INFO ═══
+  // Bank info
+  y -= 28;
   for (const line of COMPANY.bankLines) {
-    page.drawText(line, {
-      x: MARGIN, y: curY, size: FONT_SIZES.BANK, font: font,
-    });
-    curY -= pt(3.5);
+    drawText(page, line, TBL.L, y, helv, FS.bank);
+    y -= 16;
   }
 
-  const pdfBytes = await doc.save();
-  return pdfBytes;
+  return doc.save();
 }
