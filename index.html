@@ -3,96 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>發票&報價單生成器</title>
-    <link rel="stylesheet" href="style.css">
+    <meta http-equiv="refresh" content="0;url=/index-new">
+    <title>記帳系統</title>
 </head>
 <body>
-    <div class="container">
-        <h1>📄 發票 & 報價單生成器</h1>
-        
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('invoice')">發票</button>
-            <button class="tab-btn" onclick="switchTab('quotation')">報價單</button>
-        </div>
-
-        <div class="form-container">
-            <!-- 公司資訊 -->
-            <div class="section">
-                <h2>公司資訊</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>公司名稱</label>
-                        <input type="text" id="companyName" value="示例科技有限公司">
-                    </div>
-                    <div class="form-group">
-                        <label>聯絡電話</label>
-                        <input type="text" id="companyPhone" value="2123-4567">
-                    </div>
-                    <div class="form-group">
-                        <label>公司地址</label>
-                        <input type="text" id="companyAddress" value="香港中環皇后大道中123號">
-                    </div>
-                    <div class="form-group">
-                        <label>電子郵箱</label>
-                        <input type="email" id="companyEmail" value="contact@example.com">
-                    </div>
-                </div>
-            </div>
-
-            <!-- 客戶資訊 -->
-            <div class="section">
-                <h2>客戶資訊</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>客戶名稱</label>
-                        <input type="text" id="customerName" value="客戶公司名稱">
-                    </div>
-                    <div class="form-group">
-                        <label>聯絡人</label>
-                        <input type="text" id="customerContact" value="張三">
-                    </div>
-                    <div class="form-group">
-                        <label>聯絡電話</label>
-                        <input type="text" id="customerPhone" value="9123-4567">
-                    </div>
-                    <div class="form-group">
-                        <label id="docNumberLabel">發票編號</label>
-                        <input type="text" id="docNumber" value="INV-2024-001">
-                    </div>
-                </div>
-            </div>
-
-            <!-- 項目明細 -->
-            <div class="section">
-                <h2>項目明細</h2>
-                <div id="itemsContainer">
-                    <div class="item-row">
-                        <input type="text" placeholder="項目名稱" value="網站開發服務">
-                        <input type="number" placeholder="數量" value="1">
-                        <input type="number" placeholder="單價" value="50000">
-                        <button class="btn-remove" onclick="removeItem(this)">刪除</button>
-                    </div>
-                </div>
-                <button class="btn-add" onclick="addItem()">+ 新增項目</button>
-            </div>
-
-            <!-- 備註 -->
-            <div class="section">
-                <h2>備註資訊</h2>
-                <textarea id="notes" rows="3" placeholder="請填寫備註資訊...">付款方式：銀行轉賬
-有效期：30天</textarea>
-            </div>
-
-            <!-- 生成按鈕 -->
-            <div class="button-group">
-                <button class="btn-primary" onclick="generatePDF()">生成PDF</button>
-                <button class="btn-secondary" onclick="resetForm()">重置表單</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="font.js"></script>
-    <script src="script.js"></script>
+    <p>正在導向記帳系統...</p>
+    <script>location.replace('/index-new');</script>
 </body>
 </html>
