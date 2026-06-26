@@ -5,7 +5,7 @@
 const CONFIG = {
     // Worker API 設定
     API: {
-        URL: 'https://invoice-pdf-api.ai-caseylai.workers.dev',
+        URL: '',  // Same domain — Worker route handles /api/*
     },
 
     // 應用程式設定

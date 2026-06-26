@@ -54,8 +54,8 @@ function resetForm() {
     }
 }
 
-// Cloudflare Worker PDF API
-const PDF_API_URL = 'https://invoice-pdf-api.ai-caseylai.workers.dev/api/pdf/generate';
+// Cloudflare Worker PDF API (same domain via Worker route)
+const PDF_API_URL = '/api/pdf/generate';
 
 // 生成PDF — 優先使用 Cloudflare Worker API，失敗時降級為客戶端 jsPDF
 async function generatePDF() {
