@@ -201,7 +201,7 @@ export async function generatePdf(data: any, bucket?: R2Bucket): Promise<Uint8Ar
   if (sig) page.drawImage(sig, { x: 61, y: y - 33, width: 88, height: 97 });
   if (chop) page.drawImage(chop, { x: (PAGE_W - 55) / 2, y: y + 32, width: 55, height: 55 });
 
-  drawText(page, data.signature_name || 'CASEY LAI', 53, y - 8, helv, FS.label);
+  drawText(page, data.signature_name || 'CASEY LAI', 53, y - 8, f, FS.label);
 
   y -= 18;
   drawText(page, '簽名並蓋公司印章', 53, y, f, FS.label);
