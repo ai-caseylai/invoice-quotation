@@ -1,6 +1,3 @@
-// Supabase 設定
-const SUPABASE_URL = 'https://fcydqlusmtpgmwvfnopm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjeWRxbHVzbXRwZ213dmZub3BtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzNjA0NDUsImV4cCI6MjA4MDkzNjQ0NX0.bk605O6ELQ3jIkzMXhByCLBrISxrtWB6BnTpsFNBIZ8';
 
 let currentTab = 'invoice';
 
@@ -139,7 +136,7 @@ async function generatePDF() {
     const doc = new jsPDF();
 
     try {
-        let response = await fetch(`${SUPABASE_URL}/storage/v1/object/public/fonts/NotoSansSC-Regular.ttf`);
+        let response = await fetch('https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-tc@latest/chinese-traditional-400-normal.woff2');
         if (!response.ok) throw new Error('字體載入失敗');
         const arrayBuffer = await response.arrayBuffer();
         const fontBase64 = btoa(
