@@ -1,472 +1,156 @@
 // =====================================================
-// 資料庫操作層 - Supabase API 封裝
+// API 客戶端 — Cloudflare Worker API
 // =====================================================
 
 class Database {
     constructor() {
-        this.supabaseUrl = CONFIG.SUPABASE.URL;
-        this.supabaseKey = CONFIG.SUPABASE.ANON_KEY;
-        this.headers = {
-            'apikey': this.supabaseKey,
-            'Authorization': `Bearer ${this.supabaseKey}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation'
-        };
+        this.baseUrl = CONFIG.API.URL;
     }
 
-    // ==================== 通用方法 ====================
+    getToken() {
+        return localStorage.getItem('auth_token') || '';
+    }
 
-    async query(table, options = {}) {
-        try {
-            let url = `${this.supabaseUrl}/rest/v1/${table}`;
-            const params = new URLSearchParams();
+    headers() {
+        const h = { 'Content-Type': 'application/json' };
+        const t = this.getToken();
+        if (t) h['Authorization'] = `Bearer ${t}`;
+        return h;
+    }
 
-            if (options.select) params.append('select', options.select);
-            if (options.filter) {
-                Object.keys(options.filter).forEach(key => {
-                    params.append(key, `eq.${options.filter[key]}`);
-                });
-            }
-            if (options.order) params.append('order', options.order);
-            if (options.limit) params.append('limit', options.limit);
-
-            if (params.toString()) url += `?${params.toString()}`;
-
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: this.headers
-            });
-
-            if (!response.ok) throw new Error(`查詢失敗: ${response.statusText}`);
-            return await response.json();
-        } catch (error) {
-            console.error('查詢錯誤:', error);
-            throw error;
+    async request(method, path, body) {
+        const opts = { method, headers: this.headers() };
+        if (body) opts.body = JSON.stringify(body);
+        const resp = await fetch(`${this.baseUrl}${path}`, opts);
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || `HTTP ${resp.status}`);
         }
+        return resp.json();
     }
 
-    async insert(table, data) {
-        try {
-            const response = await fetch(`${this.supabaseUrl}/rest/v1/${table}`, {
-                method: 'POST',
-                headers: this.headers,
-                body: JSON.stringify(data)
-            });
+    // ─── Company ───
+    async getCompany() { return this.request('GET', '/api/company'); }
+    async updateCompany(data) { return this.request('PUT', '/api/company', data); }
 
-            if (!response.ok) throw new Error(`插入失敗: ${response.statusText}`);
-            return await response.json();
-        } catch (error) {
-            console.error('插入錯誤:', error);
-            throw error;
-        }
+    // ─── Customers ───
+    async getCustomers() { return this.request('GET', '/api/customers'); }
+    async getCustomer(id) { return this.request('GET', `/api/customers/${id}`); }
+    async createCustomer(data) { return this.request('POST', '/api/customers', data); }
+    async updateCustomer(id, data) { return this.request('PUT', `/api/customers/${id}`, data); }
+    async deleteCustomer(id) { return this.request('DELETE', `/api/customers/${id}`); }
+
+    // ─── Suppliers ───
+    async getSuppliers() { return this.request('GET', '/api/suppliers'); }
+    async getSupplier(id) { return this.request('GET', `/api/suppliers/${id}`); }
+    async createSupplier(data) { return this.request('POST', '/api/suppliers', data); }
+    async updateSupplier(id, data) { return this.request('PUT', `/api/suppliers/${id}`, data); }
+    async deleteSupplier(id) { return this.request('DELETE', `/api/suppliers/${id}`); }
+
+    // ─── Documents ───
+    async getDocuments(type) {
+        const q = type ? `?type=${type}` : '';
+        return this.request('GET', `/api/documents${q}`);
     }
-
-    async update(table, id, data) {
-        try {
-            const response = await fetch(`${this.supabaseUrl}/rest/v1/${table}?id=eq.${id}`, {
-                method: 'PATCH',
-                headers: this.headers,
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) throw new Error(`更新失敗: ${response.statusText}`);
-            return await response.json();
-        } catch (error) {
-            console.error('更新錯誤:', error);
-            throw error;
-        }
-    }
-
-    async delete(table, id) {
-        try {
-            const response = await fetch(`${this.supabaseUrl}/rest/v1/${table}?id=eq.${id}`, {
-                method: 'DELETE',
-                headers: this.headers
-            });
-
-            if (!response.ok) throw new Error(`刪除失敗: ${response.statusText}`);
-            return true;
-        } catch (error) {
-            console.error('刪除錯誤:', error);
-            throw error;
-        }
-    }
-
-    // ==================== 公司 ====================
-
-    async getCompany() {
-        const companies = await this.query('companies', { limit: 1 });
-        return companies[0] || null;
-    }
-
-    async updateCompany(data) {
-        const company = await this.getCompany();
-        if (company) {
-            return await this.update('companies', company.id, data);
-        } else {
-            return await this.insert('companies', data);
-        }
-    }
-
-    // ==================== 客戶 ====================
-
-    async getCustomers(options = {}) {
-        return await this.query('customers', {
-            select: '*',
-            order: 'name.asc',
-            ...options
-        });
-    }
-
-    async getCustomer(id) {
-        const customers = await this.query('customers', {
-            filter: { id }
-        });
-        return customers[0] || null;
-    }
-
-    async createCustomer(data) {
-        return await this.insert('customers', data);
-    }
-
-    async updateCustomer(id, data) {
-        return await this.update('customers', id, data);
-    }
-
-    async deleteCustomer(id) {
-        return await this.delete('customers', id);
-    }
-
-    // ==================== 供應商 ====================
-
-    async getSuppliers(options = {}) {
-        return await this.query('suppliers', {
-            select: '*',
-            order: 'name.asc',
-            ...options
-        });
-    }
-
-    async getSupplier(id) {
-        const suppliers = await this.query('suppliers', {
-            filter: { id }
-        });
-        return suppliers[0] || null;
-    }
-
-    async createSupplier(data) {
-        return await this.insert('suppliers', data);
-    }
-
-    async updateSupplier(id, data) {
-        return await this.update('suppliers', id, data);
-    }
-
-    async deleteSupplier(id) {
-        return await this.delete('suppliers', id);
-    }
-
-    // ==================== 單據 ====================
-
-    async getDocuments(type = null, options = {}) {
-        const filter = type ? { type } : {};
-        return await this.query('documents', {
-            select: '*',
-            filter: { ...filter, ...options.filter },
-            order: 'date.desc',
-            ...options
-        });
-    }
-
     async getDocument(id) {
-        const documents = await this.query('documents', {
-            filter: { id }
-        });
-        return documents[0] || null;
+        const doc = await this.request('GET', `/api/documents/${id}`);
+        return doc;
+    }
+    async createDocument(docData, items) {
+        return this.request('POST', '/api/documents', { ...docData, items });
+    }
+    async getDocumentItems(docId) {
+        const doc = await this.request('GET', `/api/documents/${docId}`);
+        return doc.items || [];
+    }
+    async deleteDocument(id) {
+        return this.request('DELETE', `/api/documents/${id}`);
     }
 
-    async createDocument(documentData, items) {
-        // 創建單據
-        const document = await this.insert('documents', documentData);
-        const docId = document[0].id;
-
-        // 創建單據項目
-        const itemsWithDocId = items.map((item, index) => ({
-            document_id: docId,
-            description: item.name || item.description,
-            quantity: item.quantity,
-            unit_price: item.price || item.unit_price,
-            amount: item.quantity * (item.price || item.unit_price),
-            sort_order: index
-        }));
-
-        await this.insert('document_items', itemsWithDocId);
-
-        return document[0];
+    // ─── Bank Accounts ───
+    async getBankAccounts(activeOnly) {
+        return this.request('GET', '/api/bank-accounts');
     }
-
-    async getDocumentItems(documentId) {
-        return await this.query('document_items', {
-            filter: { document_id: documentId },
-            order: 'sort_order.asc'
-        });
-    }
-
-    // ==================== 交易分類 ====================
-
-    async getCategories(type = null) {
-        const filter = type ? { type } : {};
-        return await this.query('categories', {
-            select: '*',
-            filter,
-            order: 'name.asc'
-        });
-    }
-
-    async getCategory(id) {
-        const categories = await this.query('categories', {
-            filter: { id }
-        });
-        return categories[0] || null;
-    }
-
-    // ==================== 銀行帳戶 ====================
-
-    async getBankAccounts(activeOnly = true) {
-        const filter = activeOnly ? { is_active: true } : {};
-        return await this.query('bank_accounts', {
-            select: '*',
-            filter,
-            order: 'name.asc'
-        });
-    }
-
     async getBankAccount(id) {
-        const accounts = await this.query('bank_accounts', {
-            filter: { id }
-        });
-        return accounts[0] || null;
+        return this.request('GET', `/api/bank-accounts/${id}`);
     }
-
     async createBankAccount(data) {
-        return await this.insert('bank_accounts', data);
+        return this.request('POST', '/api/bank-accounts', data);
     }
-
     async updateBankAccount(id, data) {
-        return await this.update('bank_accounts', id, data);
+        return this.request('PUT', `/api/bank-accounts/${id}`, data);
     }
 
-    // ==================== 交易記錄 ====================
-
-    async getTransactions(options = {}) {
-        return await this.query('transactions', {
-            select: '*',
-            order: 'date.desc',
-            ...options
-        });
+    // ─── Categories ───
+    async getCategories(type) {
+        const q = type ? `?type=${type}` : '';
+        return this.request('GET', `/api/categories${q}`);
+    }
+    async getCategory(id) {
+        const all = await this.getCategories();
+        return all.find(c => c.id === id) || null;
     }
 
+    // ─── Transactions ───
+    async getTransactions(options) {
+        return this.request('GET', '/api/transactions');
+    }
     async getTransaction(id) {
-        const transactions = await this.query('transactions', {
-            filter: { id }
-        });
-        return transactions[0] || null;
+        return this.request('GET', `/api/transactions/${id}`);
     }
-
     async createTransaction(data) {
-        return await this.insert('transactions', data);
+        return this.request('POST', '/api/transactions', data);
     }
-
     async updateTransaction(id, data) {
-        return await this.update('transactions', id, data);
+        return this.request('PUT', `/api/transactions/${id}`, data);
     }
-
     async deleteTransaction(id) {
-        return await this.delete('transactions', id);
+        return this.request('DELETE', `/api/transactions/${id}`);
     }
 
-    // ==================== 報表視圖 ====================
+    // ─── Reports ───
+    async getReceivablesSummary() { return this.request('GET', '/api/reports/receivables'); }
+    async getPayablesSummary() { return this.request('GET', '/api/reports/payables'); }
+    async getMonthlySummary(limit) { return this.request('GET', '/api/reports/monthly'); }
+    async getBankBalanceSummary() { return this.request('GET', '/api/reports/bank-balance'); }
 
-    async getReceivablesSummary() {
-        return await this.query('receivables_summary', {
-            select: '*',
-            order: 'outstanding_amount.desc'
-        });
-    }
-
-    async getPayablesSummary() {
-        return await this.query('payables_summary', {
-            select: '*',
-            order: 'outstanding_amount.desc'
-        });
-    }
-
-    async getMonthlySummary(limit = 12) {
-        return await this.query('monthly_summary', {
-            select: '*',
-            limit
-        });
-    }
-
-    async getBankBalanceSummary() {
-        return await this.query('bank_balance_summary', {
-            select: '*'
-        });
-    }
-
-    // ==================== PDF 排版設定 ====================
-
-    /**
-     * 獲取 PDF 排版設定
-     * @returns {Promise<Object>} 排版設定對象
-     */
+    // ─── PDF Settings ───
     async getPDFLayoutSettings() {
         try {
-            console.log('📥 從 Supabase 讀取 PDF 排版設定...');
-            const settings = await this.query('pdf_settings', {
-                select: '*',
-                limit: 1,
-                order: 'updated_at.desc'
-            });
-            
-            if (settings && settings.length > 0) {
-                console.log('✅ PDF 排版設定讀取成功:', settings[0]);
-                return settings[0].settings;
-            }
-            
-            console.log('⚠️ 沒有找到 PDF 排版設定，返回預設值');
-            return this.getDefaultLayoutSettings();
-        } catch (error) {
-            console.error('❌ 讀取 PDF 排版設定失敗:', error);
-            return this.getDefaultLayoutSettings();
-        }
+            const r = await this.request('GET', '/api/pdf/settings');
+            return r || this.getDefaultLayoutSettings();
+        } catch { return this.getDefaultLayoutSettings(); }
     }
-
-    /**
-     * 保存 PDF 排版設定
-     * @param {Object} settings - 排版設定對象
-     * @returns {Promise<Object>} 保存的設定
-     */
     async savePDFLayoutSettings(settings) {
-        try {
-            console.log('💾 保存 PDF 排版設定到 Supabase...');
-            
-            // 檢查是否已有設定
-            const existing = await this.query('pdf_settings', {
-                limit: 1,
-                order: 'updated_at.desc'
-            });
-            
-            let result;
-            if (existing && existing.length > 0) {
-                // 更新現有設定
-                console.log('更新現有設定，ID:', existing[0].id);
-                result = await this.update('pdf_settings', existing[0].id, {
-                    settings: settings,
-                    updated_at: new Date().toISOString()
-                });
-            } else {
-                // 創建新設定
-                console.log('創建新設定');
-                result = await this.insert('pdf_settings', {
-                    settings: settings,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                });
-            }
-            
-            console.log('✅ PDF 排版設定保存成功');
-            return result;
-        } catch (error) {
-            console.error('❌ 保存 PDF 排版設定失敗:', error);
-            throw error;
-        }
+        return this.request('PUT', '/api/pdf/settings', settings);
     }
-
-    /**
-     * 獲取 PDF 元件位置
-     * @returns {Promise<Object>} 元件位置對象
-     */
     async getPDFElementPositions() {
         try {
-            console.log('📥 從 Supabase 讀取 PDF 元件位置...');
-            const positions = await this.query('pdf_element_positions', {
-                select: '*',
-                limit: 1,
-                order: 'updated_at.desc'
-            });
-            
-            if (positions && positions.length > 0) {
-                console.log('✅ PDF 元件位置讀取成功，共', Object.keys(positions[0].positions).length, '個元件');
-                return positions[0].positions;
-            }
-            
-            console.log('⚠️ 沒有找到 PDF 元件位置，返回空對象');
-            return {};
-        } catch (error) {
-            console.error('❌ 讀取 PDF 元件位置失敗:', error);
-            return {};
-        }
+            const r = await this.request('GET', '/api/pdf/positions');
+            return r || {};
+        } catch { return {}; }
     }
-
-    /**
-     * 保存 PDF 元件位置
-     * @param {Object} positions - 元件位置對象
-     * @returns {Promise<Object>} 保存的位置
-     */
     async savePDFElementPositions(positions) {
-        try {
-            console.log('💾 保存 PDF 元件位置到 Supabase...');
-            console.log('元件數量:', Object.keys(positions).length);
-            
-            // 檢查是否已有位置數據
-            const existing = await this.query('pdf_element_positions', {
-                limit: 1,
-                order: 'updated_at.desc'
-            });
-            
-            let result;
-            if (existing && existing.length > 0) {
-                // 更新現有位置
-                console.log('更新現有位置，ID:', existing[0].id);
-                result = await this.update('pdf_element_positions', existing[0].id, {
-                    positions: positions,
-                    updated_at: new Date().toISOString()
-                });
-            } else {
-                // 創建新位置
-                console.log('創建新位置記錄');
-                result = await this.insert('pdf_element_positions', {
-                    positions: positions,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                });
-            }
-            
-            console.log('✅ PDF 元件位置保存成功');
-            return result;
-        } catch (error) {
-            console.error('❌ 保存 PDF 元件位置失敗:', error);
-            throw error;
-        }
+        return this.request('PUT', '/api/pdf/positions', positions);
     }
-
-    /**
-     * 獲取預設排版設定
-     * @returns {Object} 預設設定
-     */
     getDefaultLayoutSettings() {
         return {
-            margin: 20,
-            primaryColor: '#667eea',
-            companyNameSize: 18,
-            titleSize: 28,
-            sectionTitleSize: 14,
-            textSize: 11,
-            smallTextSize: 9
+            margin: 20, primaryColor: '#667eea', companyNameSize: 18,
+            titleSize: 28, sectionTitleSize: 14, textSize: 11, smallTextSize: 9
         };
+    }
+
+    // ─── Upload ───
+    async uploadFile(file, key) {
+        const form = new FormData();
+        form.append('file', file);
+        if (key) form.append('key', key);
+        const h = {};
+        const t = this.getToken();
+        if (t) h['Authorization'] = `Bearer ${t}`;
+        const resp = await fetch(`${this.baseUrl}/api/upload`, { method: 'POST', headers: h, body: form });
+        return resp.json();
     }
 }
 
-// 創建全域資料庫實例
 const db = new Database();

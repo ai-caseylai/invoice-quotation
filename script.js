@@ -105,6 +105,9 @@ async function generatePDF() {
             total: totalAmount,
             payment_terms: notes,
             signature_name: companyName,
+            logo: 'logo2-removebg-preview.png',
+            chop: 'musleabs eng chop.png',
+            signature: 'signiture.png',
         };
 
         const resp = await fetch(PDF_API_URL, {

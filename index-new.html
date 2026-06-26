@@ -1316,53 +1316,74 @@
     </script>
 
     <!-- 載入腳本 -->
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- jsPDF for PDF generation -->
+    <!-- jsPDF for PDF generation (fallback only) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+
     <script src="config.js"></script>
     <script src="db.js"></script>
     <script src="documents.js"></script>
     <script src="contacts.js"></script>
     <script src="app.js"></script>
-    
-    <!-- 初始化 Supabase -->
+
+    <!-- 登入驗證 -->
     <script>
-        // 初始化 Supabase 客戶端
-        window.supabase = window.supabase.createClient(
-            CONFIG.SUPABASE.URL,
-            CONFIG.SUPABASE.ANON_KEY
-        );
-        console.log('✅ Supabase 客戶端已初始化');
-        
-        // 🚀 預載入 PDF 字體
-        (async function preloadPDFFont(retryCount = 0) {
-            try {
-                // 預載入字體到 documentManager 的緩存中
-                if (window.documentManager && window.documentManager.loadFont) {
-                    console.log('🔤 開始預載入 PDF 字體...');
-                    const startTime = performance.now();
-                    
-                    // 創建臨時 PDF 對象來載入字體
-                    const { jsPDF } = window.jspdf;
-                    const tempPdf = new jsPDF();
-                    
-                    await documentManager.loadFont(tempPdf);
-                    
-                    const endTime = performance.now();
-                    const loadTime = ((endTime - startTime) / 1000).toFixed(2);
-                    console.log(`✅ PDF 字體預載入完成! 耗時: ${loadTime}秒`);
-                    console.log('💡 後續生成 PDF 將使用緩存字體，速度更快');
-                } else if (retryCount < 10) {
-                    // 最多重試10次，每次間隔500ms
-                    setTimeout(() => preloadPDFFont(retryCount + 1), 500);
-                } else {
-                    console.warn('⚠️ documentManager 載入超時，字體將在首次生成 PDF 時載入');
+        // 登入檢查
+        (function() {
+            const TOKEN = localStorage.getItem('auth_token');
+            const mainApp = document.querySelector('.sidebar');
+            const mainContent = document.getElementById('mainContent');
+
+            if (!TOKEN) {
+                // 顯示登入畫面
+                if (mainApp) mainApp.style.display = 'none';
+                if (mainContent) {
+                    mainContent.innerHTML = `
+                        <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);font-family:'Segoe UI','Microsoft JhengHei',sans-serif;">
+                            <div style="background:#fff;padding:40px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);text-align:center;max-width:400px;width:90%;">
+                                <h1 style="font-size:24px;color:#333;margin-bottom:8px;">📊 記帳系統</h1>
+                                <p style="color:#888;margin-bottom:24px;">請輸入密碼以繼續</p>
+                                <input type="password" id="loginPassword" placeholder="密碼" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:16px;margin-bottom:12px;outline:none;" onkeydown="if(event.key==='Enter')doLogin()">
+                                <button onclick="doLogin()" style="width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">登入</button>
+                                <p id="loginError" style="color:#e53e3e;margin-top:12px;display:none;font-size:14px;">密碼錯誤</p>
+                            </div>
+                        </div>
+                    `;
                 }
-            } catch (error) {
-                console.warn('⚠️ 字體預載入失敗 (不影響功能):', error.message);
+                window.doLogin = async function() {
+                    const pw = document.getElementById('loginPassword').value;
+                    try {
+                        const resp = await fetch(CONFIG.API.URL + '/api/auth/login', {
+                            method: 'POST',
+                            headers: {'Content-Type':'application/json'},
+                            body: JSON.stringify({password: pw})
+                        });
+                        const data = await resp.json();
+                        if (data.token) {
+                            localStorage.setItem('auth_token', data.token);
+                            location.reload();
+                        } else {
+                            document.getElementById('loginError').style.display = 'block';
+                        }
+                    } catch(e) {
+                        document.getElementById('loginError').style.display = 'block';
+                    }
+                };
+            } else {
+                // 已登入，正常初始化
+                console.log('✅ 已驗證，載入系統...');
+                // 預載入字體（僅在需要 jsPDF 降級時使用）
+                (async function preloadPDFFont(retryCount = 0) {
+                    try {
+                        if (window.documentManager && window.documentManager.loadFont) {
+                            const { jsPDF } = window.jspdf;
+                            const tempPdf = new jsPDF();
+                            await documentManager.loadFont(tempPdf);
+                            console.log('✅ PDF 字體預載入完成');
+                        } else if (retryCount < 10) {
+                            setTimeout(() => preloadPDFFont(retryCount + 1), 500);
+                        }
+                    } catch(e) {}
+                })();
             }
         })();
     </script>

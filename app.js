@@ -331,65 +331,19 @@ class BookkeepingApp {
                 document.body.appendChild(uploadMsg);
                 
                 try {
-                    // 上傳到 Supabase Storage
                     const fileName = `logo-${Date.now()}.${file.name.split('.').pop()}`;
-                    const { data: uploadData, error: uploadError } = await window.supabase.storage
-                        .from('company-assets')
-                        .upload(fileName, file, {
-                            cacheControl: '3600',
-                            upsert: false
-                        });
-                    
-                    if (uploadError) {
-                        // 如果 bucket 不存在，嘗試創建
-                        if (uploadError.message.includes('not found')) {
-                            uploadMsg.textContent = '首次使用，正在初始化儲存空間...';
-                            
-                            // 創建 bucket
-                            const { error: bucketError } = await window.supabase.storage.createBucket('company-assets', {
-                                public: true,
-                                fileSizeLimit: 2097152 // 2MB
-                            });
-                            
-                            if (bucketError && !bucketError.message.includes('already exists')) {
-                                throw bucketError;
-                            }
-                            
-                            // 重新上傳
-                            const { data: retryData, error: retryError } = await window.supabase.storage
-                                .from('company-assets')
-                                .upload(fileName, file, {
-                                    cacheControl: '3600',
-                                    upsert: false
-                                });
-                            
-                            if (retryError) throw retryError;
-                        } else {
-                            throw uploadError;
-                        }
-                    }
-                    
-                    // 獲取公開 URL
-                    const { data: urlData } = window.supabase.storage
-                        .from('company-assets')
-                        .getPublicUrl(fileName);
-                    
-                    data.logo_url = urlData.publicUrl;
+                    const result = await db.uploadFile(file, fileName);
+                    data.logo_url = fileName;
                     uploadMsg.textContent = '✅ Logo 上傳成功！';
                     setTimeout(() => uploadMsg.remove(), 2000);
-                    
                 } catch (storageError) {
-                    console.error('Supabase Storage 上傳失敗:', storageError);
+                    console.error('Logo 上傳失敗:', storageError);
                     uploadMsg.remove();
-                    
-                    // 降級：使用 Base64（但壓縮圖片）
                     uploadMsg.textContent = '正在壓縮圖片...';
                     document.body.appendChild(uploadMsg);
-                    
                     const compressedBase64 = await this.compressImage(file, 200, 100, 0.8);
                     data.logo_url = compressedBase64;
-                    
-                    uploadMsg.textContent = '⚠️ 已使用本地儲存（建議設定 Supabase Storage）';
+                    uploadMsg.textContent = '⚠️ 已使用本地儲存';
                     setTimeout(() => uploadMsg.remove(), 3000);
                 }
             }

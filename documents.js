@@ -523,9 +523,12 @@ class DocumentManager {
                     total: parseFloat(doc.total) || 0,
                     payment_terms: doc.notes || '',
                     signature_name: company?.name || 'CASEY LAI',
+                    logo: company?.logo_url || 'logo2-removebg-preview.png',
+                    chop: 'musleabs eng chop.png',
+                    signature: 'signiture.png',
                 };
 
-                const resp = await fetch('https://invoice-pdf-api.ai-caseylai.workers.dev/api/pdf/generate', {
+                const resp = await fetch(CONFIG.API.URL + '/api/pdf/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(workerPayload),
