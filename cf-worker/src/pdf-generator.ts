@@ -96,8 +96,8 @@ export async function generatePdf(data: any, bucket?: R2Bucket): Promise<Uint8Ar
   if (logo) page.drawImage(logo, { x: 57, y: Y.logo, width: 46, height: 37 });
 
   drawText(page, data.company_name || 'Muse Labs Engineering Limited', PAGE_W / 2, Y.company, f, FS.company, 'center');
-  drawText(page, data.company_address || COMPANY.address, PAGE_W / 2, Y.addr1, helv, FS.addr, 'center');
-  drawText(page, data.company_contact || COMPANY.contact, PAGE_W / 2, Y.contact, helv, FS.addr, 'center');
+  drawText(page, data.company_address || COMPANY.address, PAGE_W / 2, Y.addr1, f, FS.addr, 'center');
+  drawText(page, data.company_contact || COMPANY.contact, PAGE_W / 2, Y.contact, f, FS.addr, 'center');
 
   hLine(page, TBL.L, TBL.R, Y.separator);
   drawText(page, title, PAGE_W / 2, Y.title, helv, FS.title, 'center');
