@@ -14,7 +14,7 @@ const app = new Hono<{ Bindings: Env }>();
 let warmed = false;
 app.use('*', async (c, next) => {
   if (!warmed) {
-    prewarmFont(c.env.ASSETS);
+    prewarmFont();
     warmed = true;
   }
   await next();

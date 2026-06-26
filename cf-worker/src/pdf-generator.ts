@@ -117,10 +117,10 @@ export async function generatePdf(
   doc.registerFontkit(fontkit);
   const page = doc.addPage([A4_W, A4_H]);
 
-  // Load Chinese font
+  // Load Chinese font from CDN (same approach as secretarysystem)
   let cnFont: any;
   try {
-    const fontBuf = await loadChineseFont(bucket);
+    const fontBuf = await loadChineseFont();
     cnFont = await doc.embedFont(fontBuf);
   } catch {
     cnFont = await doc.embedFont(StandardFonts.Helvetica);
