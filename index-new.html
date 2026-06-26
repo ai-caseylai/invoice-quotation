@@ -8,7 +8,7 @@
 </head>
 <body>
     <!-- 側邊導航欄 -->
-    <nav class="sidebar">
+    <nav class="sidebar" style="display:none">
         <div class="sidebar-header">
             <h1>📊 記帳系統</h1>
             <p class="version">v2.0</p>
@@ -1341,7 +1341,6 @@
             }
             if (!TOKEN) {
                 // 顯示登入畫面
-                if (mainApp) mainApp.style.display = 'none';
                 if (mainContent) {
                     mainContent.innerHTML = `
                         <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);font-family:'Segoe UI','Microsoft JhengHei',sans-serif;">
@@ -1377,6 +1376,7 @@
             } else {
                 // 已登入，初始化應用
                 console.log('✅ 已驗證，載入系統...');
+                if (mainApp) mainApp.style.display = '';
                 if (window.initApp) window.initApp();
             }
         })();
