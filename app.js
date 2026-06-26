@@ -410,8 +410,8 @@ class BookkeepingApp {
     }
 }
 
-// 初始化應用程式
+// 初始化應用程式 — 由登入檢查觸發，不自動啟動
 let app;
-document.addEventListener('DOMContentLoaded', () => {
-    app = new BookkeepingApp();
-});
+window.initApp = function() {
+    if (!app) app = new BookkeepingApp();
+};

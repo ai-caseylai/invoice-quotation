@@ -1375,21 +1375,9 @@
                     }
                 };
             } else {
-                // 已登入，正常初始化
+                // 已登入，初始化應用
                 console.log('✅ 已驗證，載入系統...');
-                // 預載入字體（僅在需要 jsPDF 降級時使用）
-                (async function preloadPDFFont(retryCount = 0) {
-                    try {
-                        if (window.documentManager && window.documentManager.loadFont) {
-                            const { jsPDF } = window.jspdf;
-                            const tempPdf = new jsPDF();
-                            await documentManager.loadFont(tempPdf);
-                            console.log('✅ PDF 字體預載入完成');
-                        } else if (retryCount < 10) {
-                            setTimeout(() => preloadPDFFont(retryCount + 1), 500);
-                        }
-                    } catch(e) {}
-                })();
+                if (window.initApp) window.initApp();
             }
         })();
     </script>
