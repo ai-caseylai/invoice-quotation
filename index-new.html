@@ -1333,6 +1333,12 @@
             const mainApp = document.querySelector('.sidebar');
             const mainContent = document.getElementById('mainContent');
 
+            // 清除舊格式 token（強制重新登入）
+            if (TOKEN && !TOKEN.startsWith('inv_')) {
+                localStorage.removeItem('auth_token');
+                location.reload();
+                return;
+            }
             if (!TOKEN) {
                 // 顯示登入畫面
                 if (mainApp) mainApp.style.display = 'none';
