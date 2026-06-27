@@ -249,7 +249,7 @@
                 // Apply form modifications
                 if (data.action?.setFields) {
                     for (const [k, v] of Object.entries(data.action.setFields)) {
-                        if (setFormField(k, v as string)) addChatMsg('assistant', '✅ 已更新：' + k);
+                        if (setFormField(k, String(v))) addChatMsg('assistant', '✅ 已更新：' + k);
                     }
                 }
                 if (data.action?.setItems) {
