@@ -1,13 +1,39 @@
 
 let currentTab = 'invoice';
 
+// 載入已儲存的公司資訊
+function loadCompanyInfo() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('companyInfo') || '{}');
+        if (saved.companyName) document.getElementById('companyName').value = saved.companyName;
+        if (saved.companyPhone) document.getElementById('companyPhone').value = saved.companyPhone;
+        if (saved.companyAddress) document.getElementById('companyAddress').value = saved.companyAddress;
+        if (saved.companyEmail) document.getElementById('companyEmail').value = saved.companyEmail;
+    } catch(e) {}
+}
+
+// 儲存公司資訊
+function saveCompanyInfo() {
+    const info = {
+        companyName: document.getElementById('companyName').value,
+        companyPhone: document.getElementById('companyPhone').value,
+        companyAddress: document.getElementById('companyAddress').value,
+        companyEmail: document.getElementById('companyEmail').value,
+    };
+    localStorage.setItem('companyInfo', JSON.stringify(info));
+}
+
 // 切換標籤頁
 function switchTab(tab) {
     currentTab = tab;
-    const tabs = document.querySelectorAll('.tab-btn');
-    tabs.forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
-    
+    document.querySelectorAll('.tab-btn').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'invoice') || (i === 1 && tab === 'quotation') || (i === 2 && tab === 'company'));
+    });
+
+    // 顯示/隱藏 tab 內容
+    document.getElementById('tab-invoice').style.display = (tab === 'invoice' || tab === 'quotation') ? '' : 'none';
+    document.getElementById('tab-company').style.display = (tab === 'company') ? '' : 'none';
+
     // 更新標籤文字
     const label = document.getElementById('docNumberLabel');
     const input = document.getElementById('docNumber');
@@ -19,6 +45,9 @@ function switchTab(tab) {
         input.value = 'QUO-2024-001';
     }
 }
+
+// 頁面載入時讀取公司資訊
+loadCompanyInfo();
 
 // 新增項目
 function addItem() {

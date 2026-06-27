@@ -46,31 +46,39 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('invoice')">發票</button>
             <button class="tab-btn" onclick="switchTab('quotation')">報價單</button>
+            <button class="tab-btn" onclick="switchTab('company')">公司資訊</button>
         </div>
 
         <div class="form-container">
-            <div class="section">
-                <h2>公司資訊</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>公司名稱</label>
-                        <input type="text" id="companyName" value="示例科技有限公司">
-                    </div>
-                    <div class="form-group">
-                        <label>聯絡電話</label>
-                        <input type="text" id="companyPhone" value="2123-4567">
-                    </div>
-                    <div class="form-group">
-                        <label>公司地址</label>
-                        <input type="text" id="companyAddress" value="香港中環皇后大道中123號">
-                    </div>
-                    <div class="form-group">
-                        <label>電子郵箱</label>
-                        <input type="email" id="companyEmail" value="contact@example.com">
+
+            <!-- 公司資訊 Tab -->
+            <div id="tab-company" class="tab-content" style="display:none">
+                <div class="section">
+                    <h2>公司資訊</h2>
+                    <p style="color:#888;font-size:13px;margin-bottom:12px">以下資料會自動帶入發票及報價單</p>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>公司名稱</label>
+                            <input type="text" id="companyName" value="示例科技有限公司" onchange="saveCompanyInfo()">
+                        </div>
+                        <div class="form-group">
+                            <label>聯絡電話</label>
+                            <input type="text" id="companyPhone" value="2123-4567" onchange="saveCompanyInfo()">
+                        </div>
+                        <div class="form-group">
+                            <label>公司地址</label>
+                            <input type="text" id="companyAddress" value="香港中環皇后大道中123號" onchange="saveCompanyInfo()">
+                        </div>
+                        <div class="form-group">
+                            <label>電子郵箱</label>
+                            <input type="email" id="companyEmail" value="contact@example.com" onchange="saveCompanyInfo()">
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- 發票/報價單 Tab -->
+            <div id="tab-invoice" class="tab-content">
             <div class="section">
                 <h2>客戶資訊</h2>
                 <div class="form-grid">
