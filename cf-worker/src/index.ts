@@ -8,7 +8,7 @@ import { prewarmFont } from './font-loader';
 interface Env {
   DB: D1Database;
   ASSETS: R2Bucket;
-  DASHSCOPE_API_KEY?: string;
+  QWEN_API_KEY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -151,10 +151,10 @@ app.options('/api/*', (c) => new Response(null, {
   headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Authorization' },
 }));
 
-// ─── Chat (Qwen3) ───
+// ─── Chat (Qwen3 via 阿里雲百煉) ───
 app.post('/api/chat', async (c) => {
-  const apiKey = c.env.DASHSCOPE_API_KEY;
-  if (!apiKey) return c.json({ error: 'DASHSCOPE_API_KEY not configured' }, 500);
+  const apiKey = c.env.QWEN_API_KEY;
+  if (!apiKey) return c.json({ error: 'QWEN_API_KEY not configured' }, 500);
 
   const { message, sessionId, formState } = await c.req.json().catch(() => ({}));
   if (!message) return c.json({ error: 'Missing message' }, 400);
@@ -192,7 +192,7 @@ app.post('/api/chat', async (c) => {
 當你只是聊天不需要修改欄位時，不需要輸出 action JSON。請用繁體中文回答。`;
 
   try {
-    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    const resp = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({
