@@ -151,6 +151,22 @@ app.options('/api/*', (c) => new Response(null, {
   headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Authorization' },
 }));
 
+// ─── Save form data to DB ───
+app.post('/api/save-form', async (c) => {
+  const db = new DB(c.env.DB);
+  const body: any = await c.req.json();
+  let co: any = await db.getCompany();
+  const data = {
+    name: body.companyName || co?.name || '',
+    phone: body.companyPhone || co?.phone || '',
+    address: body.companyAddress || co?.address || '',
+    email: body.companyEmail || co?.email || '',
+  };
+  if (co) await db.updateCompany(co.id as string, data);
+  else await db.createCompany(data);
+  return c.json({ ok: true });
+});
+
 // ─── Chat (Qwen3 via 阿里雲百煉) ───
 app.post('/api/chat', async (c) => {
   const apiKey = c.env.QWEN_API_KEY;

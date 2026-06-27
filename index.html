@@ -256,8 +256,20 @@
 
                 // Apply form modifications
                 if (data.action?.setFields) {
+                    const changed: string[] = [];
                     for (const [k, v] of Object.entries(data.action.setFields)) {
-                        if (setFormField(k, String(v))) addChatMsg('assistant', '✅ 已更新：' + k);
+                        if (setFormField(k, String(v))) changed.push(k);
+                    }
+                    if (changed.length) {
+                        addChatMsg('assistant', '✅ 已更新並儲存：' + changed.join('、'));
+                        // Save to database
+                        fetch('/api/save-form', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(getFormState()),
+                        }).catch(() => {});
+                        // Also update localStorage
+                        saveCompanyInfo();
                     }
                 }
                 if (data.action?.setItems) {
