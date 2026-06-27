@@ -32,9 +32,10 @@ app.options('/api/pdf/generate', (c) => new Response(null, {
 }));
 
 // ─── Auth middleware ───
-const PUBLIC = new Set(['/api/auth/login', '/api/health', '/api/pdf/generate', '/api/debug-auth', '/api/chat', '/api/chat/sessions']);
+const PUBLIC_PREFIXES = ['/api/auth/login', '/api/health', '/api/pdf/generate', '/api/debug-auth',
+  '/api/chat', '/api/company', '/api/save-form', '/api/documents'];
 app.use('/api/*', async (c, next) => {
-  if (PUBLIC.has(c.req.path)) return next();
+  if (PUBLIC_PREFIXES.some(p => c.req.path.startsWith(p))) return next();
   return authMiddleware(c, next);
 });
 

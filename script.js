@@ -1,49 +1,117 @@
 
 let currentTab = 'invoice';
 
-// 載入已儲存的公司資訊
-function loadCompanyInfo() {
+// 從 D1 載入公司資訊
+async function loadCompanyInfo() {
     try {
-        const saved = JSON.parse(localStorage.getItem('companyInfo') || '{}');
-        if (saved.companyName) document.getElementById('companyName').value = saved.companyName;
-        if (saved.companyPhone) document.getElementById('companyPhone').value = saved.companyPhone;
-        if (saved.companyAddress) document.getElementById('companyAddress').value = saved.companyAddress;
-        if (saved.companyEmail) document.getElementById('companyEmail').value = saved.companyEmail;
+        const resp = await fetch('/api/company');
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.name) document.getElementById('companyName').value = data.name;
+            if (data.phone) document.getElementById('companyPhone').value = data.phone;
+            if (data.address) document.getElementById('companyAddress').value = data.address;
+            if (data.email) document.getElementById('companyEmail').value = data.email;
+        }
     } catch(e) {}
 }
 
-// 儲存公司資訊
-function saveCompanyInfo() {
-    const info = {
-        companyName: document.getElementById('companyName').value,
-        companyPhone: document.getElementById('companyPhone').value,
-        companyAddress: document.getElementById('companyAddress').value,
-        companyEmail: document.getElementById('companyEmail').value,
-    };
-    localStorage.setItem('companyInfo', JSON.stringify(info));
+// 儲存公司資訊到 D1
+async function saveCompanyInfo() {
+    try {
+        await fetch('/api/save-form', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                companyName: document.getElementById('companyName').value,
+                companyPhone: document.getElementById('companyPhone').value,
+                companyAddress: document.getElementById('companyAddress').value,
+                companyEmail: document.getElementById('companyEmail').value,
+            }),
+        });
+    } catch(e) {}
+}
+
+// 載入記錄列表
+async function loadRecords(type) {
+    const listId = type === 'invoice' ? 'invRecordsList' : 'quoRecordsList';
+    const list = document.getElementById(listId);
+    try {
+        const resp = await fetch(`/api/documents?type=${type}`);
+        const docs = await resp.json();
+        if (!docs.length) { list.innerHTML = '<p style="color:#888">暫無記錄</p>'; return; }
+        list.innerHTML = docs.map(d => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid #eee;border-radius:8px;margin-bottom:8px">
+                <div>
+                    <strong>${d.doc_number}</strong>
+                    <span style="color:#888;margin-left:12px;font-size:13px">${d.date || ''}</span>
+                    <span style="margin-left:12px;font-size:13px">HKD ${Number(d.total).toLocaleString('en-US')}</span>
+                </div>
+                <button onclick="downloadPDF('${d.doc_number}','${d.id}')" style="padding:6px 16px;background:#667eea;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">下載PDF</button>
+            </div>
+        `).join('');
+    } catch(e) { list.innerHTML = '<p style="color:#e53e3e">載入失敗</p>'; }
+}
+
+// 儲存生成的單據到 D1
+async function saveDocument(type, docNumber, date, customer, total, items, notes) {
+    try {
+        await fetch('/api/documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type, doc_number: docNumber, date, customer_id: null,
+                subtotal: total, total, notes,
+                items: items.map((it, i) => ({ description: it.name, quantity: it.quantity, unit_price: it.price, sort_order: i })),
+            }),
+        });
+    } catch(e) { console.warn('Save document failed:', e); }
+}
+
+// 重新下載 PDF
+async function downloadPDF(docNumber, docId) {
+    try {
+        const resp = await fetch(`/api/documents/${docId}`);
+        const doc = await resp.json();
+        const items = doc.items || [];
+        const payload = {
+            type: doc.type, invoice_no: doc.doc_number, date: doc.date,
+            customer: doc.customer_id || '', attention: '', tel: '', email: '', address: '',
+            items: items.map((it, i) => ({ no: i+1, description: it.description, qty: it.quantity, unit_price: it.unit_price })),
+            subtotal: doc.subtotal, total: doc.total,
+            payment_terms: doc.notes || '',
+            signature_name: 'CASEY LAI',
+            logo: 'logo2-removebg-preview.png', chop: 'musleabs eng chop.png', signature: 'signiture.png',
+        };
+        const pdfResp = await fetch('/api/pdf/generate', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+        if (pdfResp.ok) {
+            const blob = await pdfResp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `${docNumber}.pdf`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+    } catch(e) { alert('下載失敗: ' + e.message); }
 }
 
 // 切換標籤頁
 function switchTab(tab) {
     currentTab = tab;
-    document.querySelectorAll('.tab-btn').forEach((t, i) => {
-        t.classList.toggle('active', (i === 0 && tab === 'invoice') || (i === 1 && tab === 'quotation') || (i === 2 && tab === 'company'));
+    const tabOrder = ['invoice', 'quotation', 'company', 'inv-records', 'quo-records'];
+    document.querySelectorAll('.tab-btn').forEach((t, i) => { t.classList.toggle('active', tabOrder[i] === tab); });
+
+    ['tab-invoice','tab-company','tab-inv-records','tab-quo-records'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
+    if (tab === 'invoice' || tab === 'quotation') document.getElementById('tab-invoice').style.display = '';
+    else if (tab === 'company') document.getElementById('tab-company').style.display = '';
+    else if (tab === 'inv-records') { document.getElementById('tab-inv-records').style.display = ''; loadRecords('invoice'); }
+    else if (tab === 'quo-records') { document.getElementById('tab-quo-records').style.display = ''; loadRecords('quotation'); }
 
-    // 顯示/隱藏 tab 內容
-    document.getElementById('tab-invoice').style.display = (tab === 'invoice' || tab === 'quotation') ? '' : 'none';
-    document.getElementById('tab-company').style.display = (tab === 'company') ? '' : 'none';
-
-    // 更新標籤文字
     const label = document.getElementById('docNumberLabel');
     const input = document.getElementById('docNumber');
-    if (tab === 'invoice') {
-        label.textContent = '發票編號';
-        input.value = 'INV-2024-001';
-    } else {
-        label.textContent = '報價單編號';
-        input.value = 'QUO-2024-001';
-    }
+    if (tab === 'invoice') { label.textContent = '發票編號'; input.value = 'INV-2024-001'; }
+    else { label.textContent = '報價單編號'; input.value = 'QUO-2024-001'; }
 }
 
 // 頁面載入時讀取公司資訊
@@ -155,6 +223,8 @@ async function generatePDF() {
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
+            // 儲存到 D1 記錄
+            saveDocument(currentTab, docNumber, new Date().toLocaleDateString('zh-HK'), customerName, totalAmount, items, notes);
             console.log('✅ PDF generated via Cloudflare Worker');
             return;
         }
