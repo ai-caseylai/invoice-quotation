@@ -170,8 +170,6 @@ export async function generatePdf(data: any, bucket?: R2Bucket): Promise<Uint8Ar
 
   // ═══ SIGNATURE ═══
   y -= pt(20);
-  H(page, MARGIN, MARGIN+pt(80), y);
-  H(page, MARGIN+pt(115), USABLE_R, y);
   if (sig) { try { const d=sig.scale(1),sw=pt(55),s=sw/d.width; page.drawImage(sig,{x:MARGIN,y:y-d.height*s+pt(40),width:sw,height:d.height*s}); } catch{} }
 
   const sn = String(data.signature_name||'CASEY LAI').replace(/<br\/>/g,'\n').split('\n');
