@@ -174,10 +174,7 @@ export async function generatePdf(data: any, bucket?: R2Bucket): Promise<Uint8Ar
 
   const sn = String(data.signature_name||'CASEY LAI').replace(/<br\/>/g,'\n').split('\n');
   for (let i=0;i<sn.length;i++) T(page, sn[i], MARGIN, y-pt(4)-i*pt(4), f, 8);
-  T(page, '簽名並蓋公司印章', MARGIN, y-pt(4)-sn.length*pt(4), f, 8);
-
   if (chop) { try { const d=chop.scale(1),cw=pt(25),s=cw/d.width; page.drawImage(chop,{x:MARGIN+pt(58),y:y-d.height*s-pt(1)+pt(20),width:cw,height:d.height*s}); } catch{} }
-  T(page, '簽名並蓋公司印章', MARGIN+pt(115), y-pt(4), f, 8);
 
   // ═══ BANK INFO ═══
   y -= pt(30);
