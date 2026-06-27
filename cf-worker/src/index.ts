@@ -8,6 +8,7 @@ import { prewarmFont } from './font-loader';
 interface Env {
   DB: D1Database;
   ASSETS: R2Bucket;
+  DASHSCOPE_API_KEY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -31,7 +32,7 @@ app.options('/api/pdf/generate', (c) => new Response(null, {
 }));
 
 // ─── Auth middleware ───
-const PUBLIC = new Set(['/api/auth/login', '/api/health', '/api/pdf/generate', '/api/debug-auth']);
+const PUBLIC = new Set(['/api/auth/login', '/api/health', '/api/pdf/generate', '/api/debug-auth', '/api/chat', '/api/chat/sessions']);
 app.use('/api/*', async (c, next) => {
   if (PUBLIC.has(c.req.path)) return next();
   return authMiddleware(c, next);
@@ -149,6 +150,86 @@ app.post('/api/pdf/generate', async (c) => {
 app.options('/api/*', (c) => new Response(null, {
   headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Authorization' },
 }));
+
+// ─── Chat (Qwen3) ───
+app.post('/api/chat', async (c) => {
+  const apiKey = c.env.DASHSCOPE_API_KEY;
+  if (!apiKey) return c.json({ error: 'DASHSCOPE_API_KEY not configured' }, 500);
+
+  const { message, sessionId, formState } = await c.req.json().catch(() => ({}));
+  if (!message) return c.json({ error: 'Missing message' }, 400);
+
+  const db = new DB(c.env.DB);
+  let sid = sessionId;
+
+  // Create or load session
+  if (!sid) {
+    const id = crypto.randomUUID();
+    await c.env.DB.prepare('INSERT INTO chat_sessions (id, title) VALUES (?, ?)').bind(id, message.slice(0, 30)).run();
+    sid = id;
+  }
+
+  // Save user message
+  await c.env.DB.prepare('INSERT INTO chat_messages (id, session_id, role, content) VALUES (?, ?, ?, ?)').bind(crypto.randomUUID(), sid, 'user', message).run();
+
+  // Load recent history
+  const history = await c.env.DB.prepare('SELECT role, content FROM chat_messages WHERE session_id = ? ORDER BY created_at DESC LIMIT 10').bind(sid).all();
+  const msgs = history.results.reverse().map((r: any) => ({ role: r.role, content: r.content }));
+
+  // Build system prompt with form context
+  const fields = formState || {};
+  const sysPrompt = `你是發票生成器的 AI 助手。你可以幫用戶填寫表單欄位。
+當前表單狀態：${JSON.stringify(fields, null, 2)}
+
+用戶可以要求你修改任何欄位。當你確認要修改時，請用以下 JSON 格式回覆：
+\`\`\`action
+{"setFields": {"companyName": "新值", "customerName": "新值", ...}}
+\`\`\`
+
+可用欄位：companyName, companyPhone, companyAddress, companyEmail, customerName, customerContact, customerPhone, docNumber, notes, items (array of {name, quantity, price})
+對於 items 的修改，使用 setItems 欄位，值為完整的新 items 陣列。
+
+當你只是聊天不需要修改欄位時，不需要輸出 action JSON。請用繁體中文回答。`;
+
+  try {
+    const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'qwen-plus',
+        messages: [{ role: 'system', content: sysPrompt }, ...msgs.slice(-9), { role: 'user', content: message }],
+        max_tokens: 2000,
+      }),
+    });
+
+    const data: any = await resp.json();
+    if (!resp.ok) throw new Error(data.message || data.error?.message || 'API error');
+
+    const reply = data.choices?.[0]?.message?.content || '';
+    await c.env.DB.prepare('INSERT INTO chat_messages (id, session_id, role, content) VALUES (?, ?, ?, ?)').bind(crypto.randomUUID(), sid, 'assistant', reply).run();
+
+    // Extract action JSON from reply
+    let action = null;
+    const m = reply.match(/```action\s*\n([\s\S]*?)\n```/);
+    if (m) {
+      try { action = JSON.parse(m[1]); } catch {}
+    }
+
+    return c.json({ reply, sessionId: sid, action });
+  } catch (err: any) {
+    return c.json({ error: err.message || 'Chat error' }, 500);
+  }
+});
+
+app.get('/api/chat/sessions', async (c) => {
+  const r = await c.env.DB.prepare('SELECT * FROM chat_sessions ORDER BY updated_at DESC LIMIT 20').all();
+  return c.json(r.results);
+});
+
+app.get('/api/chat/sessions/:id', async (c) => {
+  const r = await c.env.DB.prepare('SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC').bind(c.req.param('id')).all();
+  return c.json(r.results);
+});
 
 app.all('*', (c) => c.json({error:'Not found'}, 404));
 
