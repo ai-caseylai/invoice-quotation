@@ -98,8 +98,7 @@ async function downloadPDF(docNumber, docId) {
 function switchTab(tab) {
     currentTab = tab;
     const tabOrder = ['invoice', 'quotation', 'company', 'inv-records', 'quo-records', 'qa'];
-    const tabIds = ['tab-invoice', 'tab-company', 'tab-inv-records', 'tab-quo-records', 'tab-qa'];
-    document.querySelectorAll('.tab-btn').forEach((t, i) => { t.classList.toggle('active', tabOrder[i] === tab); });
+    document.querySelectorAll('.vtab').forEach((t, i) => { t.classList.toggle('active', tabOrder[i] === tab); });
 
     ['tab-invoice','tab-company','tab-inv-records','tab-quo-records','tab-qa'].forEach(id => {
         const el = document.getElementById(id); if (el) el.style.display = 'none';

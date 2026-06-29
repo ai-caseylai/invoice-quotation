@@ -40,18 +40,20 @@
     </div>
 
     <div id="appContent" style="display:none">
-    <div class="container">
-        <h1>📄 發票 & 報價單生成器</h1>
+    <div style="display:flex;min-height:100vh">
+        <!-- 垂直導航條 -->
+        <nav style="width:180px;background:linear-gradient(180deg,#667eea,#764ba2);color:#fff;padding:20px 0;flex-shrink:0;min-height:100vh">
+            <div style="padding:0 16px 20px;font-size:18px;font-weight:700;text-align:center">📄 發票系統</div>
+            <button class="vtab active" onclick="switchTab('invoice')">📝 發票</button>
+            <button class="vtab" onclick="switchTab('quotation')">💰 報價單</button>
+            <button class="vtab" onclick="switchTab('company')">🏢 公司資訊</button>
+            <button class="vtab" onclick="switchTab('inv-records')">📋 發票記錄</button>
+            <button class="vtab" onclick="switchTab('quo-records')">📊 報價記錄</button>
+            <button class="vtab" onclick="switchTab('qa')">📚 常見問題</button>
+        </nav>
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('invoice')">發票</button>
-            <button class="tab-btn" onclick="switchTab('quotation')">報價單</button>
-            <button class="tab-btn" onclick="switchTab('company')">公司資訊</button>
-            <button class="tab-btn" onclick="switchTab('inv-records')">發票記錄</button>
-            <button class="tab-btn" onclick="switchTab('quo-records')">報價記錄</button>
-            <button class="tab-btn" onclick="switchTab('qa')">常見問題</button>
-        </div>
-
+        <!-- 內容區 -->
+        <div style="flex:1;padding:20px 30px;overflow-y:auto">
         <div class="form-container">
 
             <!-- 發票記錄 Tab -->
@@ -152,8 +154,18 @@
                 <button class="btn-secondary" onclick="resetForm()">重置表單</button>
             </div>
         </div>
+        </div>
     </div>
     </div>
+
+    <style>
+        .vtab { display:block; width:100%; padding:12px 20px; background:none; border:none;
+            color:rgba(255,255,255,0.75); text-align:left; font-size:15px; cursor:pointer;
+            transition:all 0.2s; }
+        .vtab:hover { background:rgba(255,255,255,0.1); color:#fff; }
+        .vtab.active { background:rgba(255,255,255,0.2); color:#fff; font-weight:700;
+            border-left:3px solid #fff; }
+    </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="font.js"></script>
