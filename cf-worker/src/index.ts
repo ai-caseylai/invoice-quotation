@@ -27,13 +27,29 @@ app.get('/api/debug-auth', (c) => {
 app.post('/api/auth/login', loginHandler);
 app.post('/api/auth/token', tokenGenHandler);
 
+// Skill info — public API documentation for AI agents
+app.get('/api/skill', (c) => c.json({
+  name: 'Invoice & Quotation PDF API',
+  version: '2.0.0',
+  description: 'Generate professional Chinese/English invoice PDFs with logo, chop, and signature',
+  auth: 'Bearer token from POST /api/auth/token (no password needed)',
+  endpoints: {
+    'POST /api/pdf/generate': { desc: 'Generate invoice/quotation/receipt PDF', body: 'JSON, returns PDF binary' },
+    'POST /api/chat': { desc: 'AI chat with form control capability', body: '{message, sessionId?, formState?}' },
+    'GET /api/company': { desc: 'Get company info' },
+    'POST /api/documents': { desc: 'Create document record' },
+    'GET /api/documents?type=invoice': { desc: 'List documents by type' },
+  },
+  tokenGen: 'POST /api/auth/token  { "hours": 8760 }  // 1h to 8760h (1 year)',
+}));
+
 // CORS for PDF
 app.options('/api/pdf/generate', (c) => new Response(null, {
   headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' },
 }));
 
 // ─── Auth middleware ───
-const PUBLIC_PREFIXES = ['/api/auth/login', '/api/auth/token', '/api/health', '/api/pdf/generate', '/api/debug-auth',
+const PUBLIC_PREFIXES = ['/api/auth/login', '/api/auth/token', '/api/skill', '/api/health', '/api/pdf/generate', '/api/debug-auth',
   '/api/chat', '/api/company', '/api/save-form', '/api/documents'];
 app.use('/api/*', async (c, next) => {
   if (PUBLIC_PREFIXES.some(p => c.req.path.startsWith(p))) return next();

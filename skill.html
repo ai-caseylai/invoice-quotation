@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>發票系統 Skill API</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --card: #fff; --text: #1e293b; --border: #e2e8f0; --code: #0f172a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); padding: 40px 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 20px; }
+        h1 { font-size: 24px; margin-bottom: 4px; }
+        h2 { font-size: 18px; margin: 24px 0 12px; color: var(--primary); }
+        .sub { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+        pre { background: var(--code); color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+        code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 13px; }
+        .endpoint { padding: 12px 16px; background: #f1f5f9; border-radius: 8px; margin: 8px 0; font-size: 14px; }
+        .method { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; margin-right: 8px; min-width: 44px; text-align: center; }
+        .get { background: #dcfce7; color: #166534; }
+        .post { background: #dbeafe; color: #1e40af; }
+        .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 16px; display: block; }
+        .field { font-size: 13px; color: #94a3b8; margin-left: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>📄 發票 & 報價單 Skill API</h1>
+            <p class="sub">無需認證的 AI 智能體整合端點 — 生成專業中英文發票 PDF</p>
+
+            <h2>🔑 取得 Token（無需密碼）</h2>
+            <pre><code>POST /api/auth/token
+Content-Type: application/json
+
+{"hours": 8760}</code></pre>
+            <p style="font-size:13px;color:#64748b">支援：1 / 6 / 24 / 72 / 168 / 336 / 720 / 2160 / 4320 / 8760 小時</p>
+
+            <h2>端點列表</h2>
+            <div class="endpoint"><span class="method post">POST</span> <code>/api/pdf/generate</code> <span class="field">— 生成發票/報價單/收據 PDF</span></div>
+            <div class="endpoint"><span class="method get">GET</span> <code>/api/company</code> <span class="field">— 讀取公司資訊</span></div>
+            <div class="endpoint"><span class="method post">POST</span> <code>/api/chat</code> <span class="field">— AI 對話（修改表單欄位）</span></div>
+            <div class="endpoint"><span class="method get">GET</span> <code>/api/documents?type=invoice</code> <span class="field">— 查詢單據記錄</span></div>
+            <div class="endpoint"><span class="method post">POST</span> <code>/api/documents</code> <span class="field">— 建立單據記錄</span></div>
+
+            <h2>📮 PDF 生成 JSON 格式</h2>
+            <pre><code>{
+  "type": "invoice",
+  "invoice_no": "INV26-0001",
+  "date": "29/06/2026",
+  "company_name": "Muse Labs Engineering Limited",
+  "company_address": "RM15, 11/F, Meeco Industrial Bldg, Fo Tan",
+  "company_contact": "Tel 97188675  Email: info@muselabs-eng.com",
+  "customer": "客戶公司名稱",
+  "attention": "聯絡人",
+  "tel": "+852 9123 4567",
+  "email": "client@example.com",
+  "address": "客戶地址",
+  "project_title": "項目名稱（選填）",
+  "items": [
+    {"no": 1, "description": "網站設計服務", "qty": 1, "unit_price": 50000},
+    {"no": 2, "description": "系統開發", "qty": 2, "unit_price": 25000}
+  ],
+  "subtotal": 100000,
+  "total": 100000,
+  "discount": 0,
+  "payment_terms": "30 天內付款",
+  "remark": "備註內容（選填）",
+  "signature_name": "CASEY LAI",
+  "logo": "logo2-removebg-preview.png",
+  "chop": "musleabs eng chop.png",
+  "signature": "signiture.png"
+}</code></pre>
+
+            <h2>📥 調用示例</h2>
+            <pre><code># 取得 Token
+TOKEN=$(curl -s -X POST https://invoice.techforliving.net/api/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"hours":8760}' | jq -r '.token')
+
+# 生成 PDF
+curl -X POST https://invoice.techforliving.net/api/pdf/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"type":"invoice","invoice_no":"INV26-0001","date":"29/06/2026",...}' \
+  -o invoice.pdf</code></pre>
+
+            <p style="font-size:13px;color:#94a3b8;margin-top:24px">Token 用於 Authorization: Bearer header。PDF 返回 binary，支援 logo/簽名/蓋章嵌入。</p>
+        </div>
+    </div>
+</body>
+</html>
