@@ -227,7 +227,7 @@ app.post('/api/chat', async (c) => {
 
 當前表單狀態：${JSON.stringify(fields, null, 2)}
 
-請用繁體中文回答。回答要簡潔。如果用戶問的是改欄位，請同時輸出 action JSON。`;
+請用繁體中文回答。回答要簡潔有用。即使你要輸出 action JSON 來修改欄位，也必須同時用一句話說明你做了什麼修改。`;
 
   try {
     const resp = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
