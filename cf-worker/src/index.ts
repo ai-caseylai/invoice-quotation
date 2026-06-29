@@ -4,6 +4,7 @@ import { DB } from './db';
 import { authMiddleware, loginHandler, tokenGenHandler } from './auth';
 import { generatePdf } from './pdf-generator';
 import { prewarmFont } from './font-loader';
+import { handleMcpSSE, handleMcpMessage } from './mcp';
 
 interface Env {
   DB: D1Database;
@@ -26,6 +27,13 @@ app.get('/api/debug-auth', (c) => {
 });
 app.post('/api/auth/login', loginHandler);
 app.post('/api/auth/token', tokenGenHandler);
+
+// ─── MCP Server (public) ───
+app.get('/api/mcp/sse', (c) => handleMcpSSE(c));
+app.post('/api/mcp/messages', (c) => handleMcpMessage(c, c.env));
+app.options('/api/mcp/messages', (c) => new Response(null, {
+  headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' },
+}));
 
 // Skill info — public API documentation for AI agents
 app.get('/api/skill', (c) => c.json({
@@ -50,6 +58,7 @@ app.options('/api/pdf/generate', (c) => new Response(null, {
 
 // ─── Auth middleware ───
 const PUBLIC_PREFIXES = ['/api/auth/login', '/api/auth/token', '/api/skill', '/api/health', '/api/pdf/generate', '/api/debug-auth',
+  '/mcp/',
   '/api/chat', '/api/company', '/api/save-form', '/api/documents'];
 app.use('/api/*', async (c, next) => {
   if (PUBLIC_PREFIXES.some(p => c.req.path.startsWith(p))) return next();
