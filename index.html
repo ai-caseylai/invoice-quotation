@@ -59,9 +59,30 @@
             }
         }
     </script>
+    <script>
+        // 核心函數 — 必須在 HTML 之前定義
+        let currentTab = 'invoice';
+        function switchTab(tab) {
+            currentTab = tab;
+            var order = ['invoice','quotation','company','inv-records','quo-records','qa'];
+            var vts = document.querySelectorAll('.vtab');
+            for (var i = 0; i < vts.length; i++) { vts[i].classList.toggle('active', order[i] === tab); }
+            var ids = ['tab-invoice','tab-company','tab-inv-records','tab-quo-records','tab-qa'];
+            for (var j = 0; j < ids.length; j++) { var el = document.getElementById(ids[j]); if (el) el.style.display = 'none'; }
+            if (tab === 'invoice' || tab === 'quotation') document.getElementById('tab-invoice').style.display = '';
+            else if (tab === 'company') document.getElementById('tab-company').style.display = '';
+            else if (tab === 'inv-records') { document.getElementById('tab-inv-records').style.display = ''; if (typeof loadRecords === 'function') loadRecords('invoice'); }
+            else if (tab === 'quo-records') { document.getElementById('tab-quo-records').style.display = ''; if (typeof loadRecords === 'function') loadRecords('quotation'); }
+            else if (tab === 'qa') { document.getElementById('tab-qa').style.display = ''; if (typeof loadQA === 'function') loadQA(); }
+            var lbl = document.getElementById('docNumberLabel');
+            var inp = document.getElementById('docNumber');
+            if (tab === 'invoice') { if (lbl) lbl.textContent = '發票編號'; if(inp) inp.value = 'INV-2024-001'; }
+            else { if (lbl) lbl.textContent = '報價單編號'; if(inp) inp.value = 'QUO-2024-001'; }
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="font.js?v=2"></script>
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=3"></script>
     <div id="loginOverlay">
         <div id="loginBox">
             <h2>📄 發票 & 報價單生成器</h2>

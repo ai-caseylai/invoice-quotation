@@ -1,5 +1,5 @@
 
-let currentTab = 'invoice';
+// currentTab and switchTab are defined inline in index.html
 
 // 從 D1 載入公司資訊
 async function loadCompanyInfo() {
@@ -94,26 +94,7 @@ async function downloadPDF(docNumber, docId) {
     } catch(e) { alert('下載失敗: ' + e.message); }
 }
 
-// 切換標籤頁
-function switchTab(tab) {
-    currentTab = tab;
-    const tabOrder = ['invoice', 'quotation', 'company', 'inv-records', 'quo-records', 'qa'];
-    document.querySelectorAll('.vtab').forEach((t, i) => { t.classList.toggle('active', tabOrder[i] === tab); });
-
-    ['tab-invoice','tab-company','tab-inv-records','tab-quo-records','tab-qa'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.style.display = 'none';
-    });
-    if (tab === 'invoice' || tab === 'quotation') document.getElementById('tab-invoice').style.display = '';
-    else if (tab === 'company') document.getElementById('tab-company').style.display = '';
-    else if (tab === 'inv-records') { document.getElementById('tab-inv-records').style.display = ''; loadRecords('invoice'); }
-    else if (tab === 'quo-records') { document.getElementById('tab-quo-records').style.display = ''; loadRecords('quotation'); }
-    else if (tab === 'qa') { document.getElementById('tab-qa').style.display = ''; loadQA(); }
-
-    const label = document.getElementById('docNumberLabel');
-    const input = document.getElementById('docNumber');
-    if (tab === 'invoice') { label.textContent = '發票編號'; input.value = 'INV-2024-001'; }
-    else { label.textContent = '報價單編號'; input.value = 'QUO-2024-001'; }
-}
+// switchTab is defined inline in index.html
 
 // 載入常見問題
 async function loadQA() {
