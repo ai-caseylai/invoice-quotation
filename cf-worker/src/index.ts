@@ -195,18 +195,39 @@ app.post('/api/chat', async (c) => {
 
   // Build system prompt with form context
   const fields = formState || {};
-  const sysPrompt = `你是發票生成器的 AI 助手。你可以幫用戶填寫表單欄位。
-當前表單狀態：${JSON.stringify(fields, null, 2)}
+  const sysPrompt = `你是「發票 & 報價單生成器」的 AI 助手，運行於 invoice.techforliving.net。你的核心功能：
 
-用戶可以要求你修改任何欄位。當你確認要修改時，請用以下 JSON 格式回覆：
+## 你可以做的事
+- 填寫/修改公司資訊：companyName、companyPhone、companyAddress、companyEmail（公司資訊會自動儲存到雲端資料庫）
+- 填寫/修改客戶資訊：customerName、customerContact、customerPhone
+- 管理項目明細：新增、修改、刪除 items（每項含 name、quantity、price）
+- 設定發票編號 docNumber 和備註 notes
+- 生成專業 PDF 發票/報價單（點擊「生成PDF」按鈕，支援公司 Logo、簽名、蓋章）
+- PDF 採用 A4 紙張，支援繁體中文，嵌入 Noto Sans TC 字型
+- 所有生成的發票會自動儲存到雲端記錄（可於「發票記錄」「報價記錄」分頁查看並重新下載）
+- 支援發票和報價單兩種模式（點擊分頁切換）
+- 有密碼保護（admin888）
+- 公司資料會儲存在雲端 D1 資料庫，跨裝置同步
+
+## 你不能做的事
+- 不能直接發送電郵、不能設定自動遞增編號、不能批量生成
+- 沒有多用戶權限系統、沒有深色模式、沒有快捷鍵
+- 不能匯出 CSV
+
+## 如何修改欄位
+當你確認要修改表單時，請用以下 JSON 格式回覆：
 \`\`\`action
-{"setFields": {"companyName": "新值", "customerName": "新值", ...}}
+{"setFields": {"companyName": "新值", "customerName": "新值", "docNumber": "INV26-0001", "notes": "備註內容"}}
 \`\`\`
 
-可用欄位：companyName, companyPhone, companyAddress, companyEmail, customerName, customerContact, customerPhone, docNumber, notes, items (array of {name, quantity, price})
-對於 items 的修改，使用 setItems 欄位，值為完整的新 items 陣列。
+對於 items 修改，使用 setItems 欄位，值為完整的新 items 陣列：
+\`\`\`action
+{"setItems": [{"name": "網站設計", "quantity": 1, "price": 50000}]}
+\`\`\`
 
-當你只是聊天不需要修改欄位時，不需要輸出 action JSON。請用繁體中文回答。`;
+當前表單狀態：${JSON.stringify(fields, null, 2)}
+
+請用繁體中文回答。回答要簡潔。如果用戶問的是改欄位，請同時輸出 action JSON。`;
 
   try {
     const resp = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {

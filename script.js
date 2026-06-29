@@ -97,21 +97,47 @@ async function downloadPDF(docNumber, docId) {
 // 切換標籤頁
 function switchTab(tab) {
     currentTab = tab;
-    const tabOrder = ['invoice', 'quotation', 'company', 'inv-records', 'quo-records'];
+    const tabOrder = ['invoice', 'quotation', 'company', 'inv-records', 'quo-records', 'qa'];
+    const tabIds = ['tab-invoice', 'tab-company', 'tab-inv-records', 'tab-quo-records', 'tab-qa'];
     document.querySelectorAll('.tab-btn').forEach((t, i) => { t.classList.toggle('active', tabOrder[i] === tab); });
 
-    ['tab-invoice','tab-company','tab-inv-records','tab-quo-records'].forEach(id => {
+    ['tab-invoice','tab-company','tab-inv-records','tab-quo-records','tab-qa'].forEach(id => {
         const el = document.getElementById(id); if (el) el.style.display = 'none';
     });
     if (tab === 'invoice' || tab === 'quotation') document.getElementById('tab-invoice').style.display = '';
     else if (tab === 'company') document.getElementById('tab-company').style.display = '';
     else if (tab === 'inv-records') { document.getElementById('tab-inv-records').style.display = ''; loadRecords('invoice'); }
     else if (tab === 'quo-records') { document.getElementById('tab-quo-records').style.display = ''; loadRecords('quotation'); }
+    else if (tab === 'qa') { document.getElementById('tab-qa').style.display = ''; loadQA(); }
 
     const label = document.getElementById('docNumberLabel');
     const input = document.getElementById('docNumber');
     if (tab === 'invoice') { label.textContent = '發票編號'; input.value = 'INV-2024-001'; }
     else { label.textContent = '報價單編號'; input.value = 'QUO-2024-001'; }
+}
+
+// 載入常見問題
+async function loadQA() {
+    const el = document.getElementById('qaContent');
+    try {
+        const resp = await fetch('/QA-100.md');
+        if (!resp.ok) throw new Error('Not found');
+        const md = await resp.text();
+        // Simple markdown to HTML conversion
+        let html = md
+            .replace(/### (.+)/g, '<h4>$1</h4>')
+            .replace(/## (\d+\. .+)/g, '<h3 style="color:#667eea;margin-top:20px">$1</h3>')
+            .replace(/# (.+)/g, '<h2>$1</h2>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^- (.+)/gm, '<li>$1</li>')
+            .replace(/```([\s\S]*?)```/g, '<pre style="background:#f5f5f5;padding:10px;border-radius:6px;overflow-x:auto"><code>$1</code></pre>')
+            .replace(/`([^`]+)`/g, '<code style="background:#f0f0f0;padding:2px 6px;border-radius:4px">$1</code>')
+            .replace(/\n---\n/g, '<hr style="border:none;border-top:1px solid #eee;margin:16px 0">')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        html = '<p>' + html + '</p>';
+        el.innerHTML = html;
+    } catch(e) { el.innerHTML = '<p style="color:#e53e3e">載入失敗</p>'; }
 }
 
 // 頁面載入時讀取公司資訊
