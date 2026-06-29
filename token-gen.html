@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Token 生成器 — 發票系統</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f1f5f9; --card: #fff; --text: #1e293b; --border: #e2e8f0; --radius: 12px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: var(--card); border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 40px; max-width: 600px; width: 100%; }
+        h1 { font-size: 22px; margin-bottom: 4px; }
+        .sub { color: #64748b; font-size: 14px; margin-bottom: 28px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group select, .form-group input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 15px; outline: none; transition: border .2s; }
+        .form-group select:focus, .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+        .btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+        .btn:hover { background: #1d4ed8; }
+        .result { margin-top: 24px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius); display: none; }
+        .result h3 { font-size: 14px; color: #166534; margin-bottom: 12px; }
+        .result .token { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; word-break: break-all; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #dcfce7; color: #166534; user-select: all; }
+        .result .info { font-size: 13px; color: #64748b; margin-top: 10px; }
+        .copy-btn { padding: 8px 16px; background: #166534; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-top: 10px; }
+        .endpoints { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); }
+        .endpoints h3 { font-size: 14px; margin-bottom: 12px; }
+        .endpoints code { display: block; font-size: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; word-break: break-all; border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔑 API Token 生成器</h1>
+        <p class="sub">為 AI 智能體 / Skill 生成限時存取 Token，無需密碼即可調用發票系統 API</p>
+
+        <div class="form-group">
+            <label>有效時間</label>
+            <select id="duration">
+                <option value="1">1 小時</option>
+                <option value="6">6 小時</option>
+                <option value="24" selected>24 小時</option>
+                <option value="72">3 天</option>
+                <option value="168">7 天</option>
+                <option value="720">30 天</option>
+            </select>
+        </div>
+
+        <button class="btn" onclick="generateToken()">生成 Token</button>
+
+        <div class="result" id="result">
+            <h3>✅ Token 已生成</h3>
+            <div class="token" id="tokenDisplay"></div>
+            <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('tokenDisplay').textContent)">📋 複製</button>
+            <div class="info" id="tokenInfo"></div>
+        </div>
+
+        <div class="endpoints">
+            <h3>API 端點（Bearer Token）</h3>
+            <code>POST /api/pdf/generate — 生成發票 PDF</code>
+            <code>POST /api/chat — AI 對話</code>
+            <code>GET /api/company — 讀取公司資訊</code>
+            <code>POST /api/documents — 建立單據記錄</code>
+            <code>GET /api/documents?type=invoice — 查詢單據</code>
+        </div>
+    </div>
+
+    <script>
+        async function generateToken() {
+            const hours = document.getElementById('duration').value;
+            const resp = await fetch('/api/auth/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hours: parseInt(hours) }),
+            });
+            const data = await resp.json();
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('tokenDisplay').textContent = data.token;
+            document.getElementById('tokenInfo').textContent = `過期時間：${data.expiresAt}（${data.expiresIn}）`;
+        }
+    </script>
+</body>
+</html>

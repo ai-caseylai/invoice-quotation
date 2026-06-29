@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 import { DB } from './db';
-import { authMiddleware, loginHandler } from './auth';
+import { authMiddleware, loginHandler, tokenGenHandler } from './auth';
 import { generatePdf } from './pdf-generator';
 import { prewarmFont } from './font-loader';
 
@@ -25,6 +25,7 @@ app.get('/api/debug-auth', (c) => {
   return c.json({ auth, token: token.substring(0, 30), valid, allHeaders: Object.fromEntries(c.req.raw.headers.entries()) });
 });
 app.post('/api/auth/login', loginHandler);
+app.post('/api/auth/token', tokenGenHandler);
 
 // CORS for PDF
 app.options('/api/pdf/generate', (c) => new Response(null, {
@@ -32,7 +33,7 @@ app.options('/api/pdf/generate', (c) => new Response(null, {
 }));
 
 // ─── Auth middleware ───
-const PUBLIC_PREFIXES = ['/api/auth/login', '/api/health', '/api/pdf/generate', '/api/debug-auth',
+const PUBLIC_PREFIXES = ['/api/auth/login', '/api/auth/token', '/api/health', '/api/pdf/generate', '/api/debug-auth',
   '/api/chat', '/api/company', '/api/save-form', '/api/documents'];
 app.use('/api/*', async (c, next) => {
   if (PUBLIC_PREFIXES.some(p => c.req.path.startsWith(p))) return next();
