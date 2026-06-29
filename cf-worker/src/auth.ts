@@ -14,7 +14,7 @@ async function signPayload(payload: string): Promise<string> {
   return `${btoa(payload)}.${sigB64}`;
 }
 
-async function verifyPayload(token: string): Promise<{ exp?: number } | null> {
+export async function verifyPayload(token: string): Promise<{ exp?: number } | null> {
   try {
     const [payloadB64, sigB64] = token.split('.');
     if (!payloadB64 || !sigB64) return null;

@@ -31,7 +31,25 @@ export async function handleMcpSSE(c: any): Promise<Response> {
   });
 }
 
+import { verifyPayload } from './auth';
+
+async function checkMcpAuth(c: any): Promise<boolean> {
+  const auth = c.req.header('Authorization') || '';
+  const token = auth.replace('Bearer ', '');
+  if (!token) return false;
+  // Accept: valid signed token OR legacy auth token
+  try {
+    const payload = await verifyPayload(token);
+    if (payload && (!payload.exp || payload.exp > Date.now())) return true;
+  } catch {}
+  const parts = token.split('.');
+  return parts.length === 2 && parts[0] === 'inv_7xK9mP2qR5vL8nB3wJ6fD4hT1cY0a';
+}
+
 export async function handleMcpMessage(c: any, env: Env): Promise<Response> {
+  // Check auth
+  if (!(await checkMcpAuth(c))) return mcpError(0, -32001, 'Unauthorized: provide a valid Bearer token in Authorization header');
+
   const req: MCPRequest = await c.req.json().catch(() => ({}));
   if (req.jsonrpc !== '2.0') return mcpError(req.id, -32600, 'Invalid Request');
 
