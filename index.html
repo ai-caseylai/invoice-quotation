@@ -64,20 +64,29 @@
         let currentTab = 'invoice';
         function switchTab(tab) {
             currentTab = tab;
-            var order = ['invoice','quotation','company','inv-records','quo-records','qa'];
+            var order = ['invoice','quotation','company','inv-records','quo-records','qa','token'];
             var vts = document.querySelectorAll('.vtab');
             for (var i = 0; i < vts.length; i++) { vts[i].classList.toggle('active', order[i] === tab); }
-            var ids = ['tab-invoice','tab-company','tab-inv-records','tab-quo-records','tab-qa'];
+            var ids = ['tab-invoice','tab-company','tab-inv-records','tab-quo-records','tab-qa','tab-token'];
             for (var j = 0; j < ids.length; j++) { var el = document.getElementById(ids[j]); if (el) el.style.display = 'none'; }
             if (tab === 'invoice' || tab === 'quotation') document.getElementById('tab-invoice').style.display = '';
             else if (tab === 'company') document.getElementById('tab-company').style.display = '';
             else if (tab === 'inv-records') { document.getElementById('tab-inv-records').style.display = ''; if (typeof loadRecords === 'function') loadRecords('invoice'); }
             else if (tab === 'quo-records') { document.getElementById('tab-quo-records').style.display = ''; if (typeof loadRecords === 'function') loadRecords('quotation'); }
             else if (tab === 'qa') { document.getElementById('tab-qa').style.display = ''; if (typeof loadQA === 'function') loadQA(); }
+            else if (tab === 'token') document.getElementById('tab-token').style.display = '';
             var lbl = document.getElementById('docNumberLabel');
             var inp = document.getElementById('docNumber');
             if (tab === 'invoice') { if (lbl) lbl.textContent = '發票編號'; if(inp) inp.value = 'INV-2024-001'; }
             else { if (lbl) lbl.textContent = '報價單編號'; if(inp) inp.value = 'QUO-2024-001'; }
+        }
+        async function genAPIToken() {
+            var hours = parseInt(document.getElementById('tokenDuration').value);
+            var resp = await fetch('/api/auth/token', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hours}) });
+            var data = await resp.json();
+            document.getElementById('tokenResult').style.display = 'block';
+            document.getElementById('tokenValue').textContent = data.token;
+            document.getElementById('tokenExpiry').textContent = '過期時間：' + data.expiresAt + '（' + data.expiresIn + '）';
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -122,7 +131,9 @@
                 <span>常見問題</span>
             </button>
             <div style="padding:12px 20px 6px;font-size:11px;opacity:0.4;text-transform:uppercase;letter-spacing:1px;margin-top:8px">開發者</div>
-            <a href="/token-gen" style="display:block;padding:10px 20px;color:rgba(255,255,255,0.55);text-decoration:none;font-size:14px;transition:all 0.15s;border-left:3px solid transparent" onmouseover="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.85)'" onmouseout="this.style.background='none';this.style.color='rgba(255,255,255,0.55)'">🔑 API Token</a>
+            <button class="vtab" onclick="switchTab('token')">
+                <span>🔑 API Token</span>
+            </button>
         </nav>
 
         <!-- 內容區 -->
@@ -142,6 +153,36 @@
                 <div class="section">
                     <h2>📋 報價記錄</h2>
                     <div id="quoRecordsList"><p style="color:#888">載入中...</p></div>
+                </div>
+            </div>
+
+            <!-- API Token Tab -->
+            <div id="tab-token" class="tab-content" style="display:none">
+                <div class="section">
+                    <h2>🔑 API Token 生成器</h2>
+                    <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px">為 AI 智能體 / Skill 生成限時存取 Token，無需密碼即可調用發票系統 API</p>
+                    <div class="form-group">
+                        <label>有效時間</label>
+                        <select id="tokenDuration" style="max-width:200px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px">
+                            <option value="1">1 小時</option><option value="6">6 小時</option>
+                            <option value="24" selected>24 小時</option><option value="72">3 天</option>
+                            <option value="168">7 天</option><option value="720">30 天</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="genAPIToken()">生成 Token</button>
+                    <div id="tokenResult" style="display:none;margin-top:20px;padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius)">
+                        <strong style="color:#166534">✅ Token 已生成</strong>
+                        <div id="tokenValue" style="font-family:monospace;font-size:12px;word-break:break-all;background:#fff;padding:12px;border-radius:8px;border:1px solid #dcfce7;margin-top:8px;user-select:all"></div>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('tokenValue').textContent)" style="margin-top:8px;padding:6px 14px;background:#166534;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">📋 複製</button>
+                        <div id="tokenExpiry" style="font-size:13px;color:#64748b;margin-top:8px"></div>
+                    </div>
+                    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+                        <h3 style="font-size:14px;margin-bottom:10px">API 端點（Bearer Token）</h3>
+                        <code style="display:block;font-size:12px;background:#f8fafc;padding:8px 12px;border-radius:6px;margin-bottom:6px;border:1px solid var(--border)">POST /api/pdf/generate — 生成發票 PDF</code>
+                        <code style="display:block;font-size:12px;background:#f8fafc;padding:8px 12px;border-radius:6px;margin-bottom:6px;border:1px solid var(--border)">POST /api/chat — AI 對話</code>
+                        <code style="display:block;font-size:12px;background:#f8fafc;padding:8px 12px;border-radius:6px;margin-bottom:6px;border:1px solid var(--border)">GET /api/company — 讀取公司資訊</code>
+                        <code style="display:block;font-size:12px;background:#f8fafc;padding:8px 12px;border-radius:6px;border:1px solid var(--border)">POST /api/documents — 建立單據記錄</code>
+                    </div>
                 </div>
             </div>
 
