@@ -70,7 +70,7 @@ export async function loginHandler(c: Context) {
 // Generate time-limited API token (for AI agents / skills)
 export async function tokenGenHandler(c: Context) {
   const { hours } = await c.req.json().catch(() => ({}));
-  const duration = Math.min(Number(hours) || 24, 720); // max 30 days
+  const duration = Math.min(Number(hours) || 24, 8760); // max 1 year
   const exp = Date.now() + duration * 3600 * 1000;
   const token = await signPayload(JSON.stringify({ exp, gen: Date.now() }));
   return c.json({ token, expiresIn: `${duration}h`, expiresAt: new Date(exp).toISOString() });
