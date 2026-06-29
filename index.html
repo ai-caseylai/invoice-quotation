@@ -324,7 +324,7 @@
 
                 // Apply form modifications
                 if (data.action?.setFields) {
-                    const changed: string[] = [];
+                    const changed = [];
                     for (const [k, v] of Object.entries(data.action.setFields)) {
                         if (setFormField(k, String(v))) changed.push(k);
                     }
