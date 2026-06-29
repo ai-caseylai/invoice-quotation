@@ -46,6 +46,19 @@
     </style>
 </head>
 <body>
+    <script>
+        // 登入函數 — 必須在 HTML 元素之前定義
+        function doLogin() {
+            var pw = document.getElementById('loginPassword').value;
+            if (pw === 'admin888') {
+                sessionStorage.setItem('inv_auth', '1');
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('appContent').style.display = '';
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+    </script>
     <div id="loginOverlay">
         <div id="loginBox">
             <h2>📄 發票 & 報價單生成器</h2>
@@ -204,25 +217,15 @@
     <script src="font.js?v=2"></script>
     <script src="script.js?v=2"></script>
     <script>
-        // 密碼保護
+        // 密碼保護 — 登入狀態檢查
         (function() {
             if (sessionStorage.getItem('inv_auth')) {
-                document.getElementById('loginOverlay').style.display = 'none';
-                document.getElementById('appContent').style.display = '';
-                return;
+                var ov = document.getElementById('loginOverlay');
+                var app = document.getElementById('appContent');
+                if (ov) ov.style.display = 'none';
+                if (app) app.style.display = '';
             }
-            document.getElementById('appContent').style.display = 'none';
         })();
-        function doLogin() {
-            var pw = document.getElementById('loginPassword').value;
-            if (pw === 'admin888') {
-                sessionStorage.setItem('inv_auth', '1');
-                document.getElementById('loginOverlay').style.display = 'none';
-                document.getElementById('appContent').style.display = '';
-            } else {
-                document.getElementById('loginError').style.display = 'block';
-            }
-        }
     </script>
 
     <!-- Qwen3 Chatbot Sidebar -->
