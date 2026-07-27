@@ -9,7 +9,7 @@
   "mobile": "",
   "email": "info@wlptcpa.com",
   "address": "Flat/Rm 405, 4/F, Tung Ning Bldg, 249 - 251 Des Voeux Rd Central, H.K.",
-  "logo": "/Users/apple/Downloads/cropped-Muse-Labs-Engineering-Ltd-Logo-PNG-1-90x90.png",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
   "project_title": "Development fee for TVP project",
   "items": [
     {
@@ -25,8 +25,8 @@
   "deposit": 0,
   "deposit_label": "",
   "payment_terms": "Received with thanks",
-  "remark": "",
-  "chop": "/Users/apple/Downloads/musleabs eng chop.png",
-  "signature": "/Users/apple/Downloads/signiture.png",
+  "remark": "Refer to INV22-1175 for invoice detail",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
   "signature_name": "CASEY LAI<br/>CEO"
 }

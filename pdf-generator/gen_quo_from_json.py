@@ -316,8 +316,11 @@ def create_quotation_pdf(data, output_path=None):
             f"{item['unit_price']:,.0f}",
             f"{item.get('qty', 1) * item['unit_price']:,.0f}",
         ])
-        br_count = desc.count("<br/>")
-        row_heights.append(10*mm + (len(sub_items) + br_count) * 5.8*mm)
+        # Calculate lines: br tags + natural text wrap in 88mm column (~55 chars/line at 10pt)
+        desc_text = desc.replace('<br/>', '')
+        import math
+        wrap_lines = max(1, math.ceil(len(desc_text) / 55))
+        row_heights.append(10*mm + (len(sub_items) + wrap_lines - 1) * 5.8*mm)
 
     it = Table(table_data, colWidths=[12*mm, 88*mm, 14*mm, 32*mm, 34*mm], rowHeights=row_heights)
     it.setStyle(TableStyle([
@@ -375,6 +378,22 @@ def create_quotation_pdf(data, output_path=None):
     ]))
     story.append(bt)
     dbg_marker(story, 10, "Totals + Payment Terms Table END")
+
+    # Remark — separate table with same colWidths for exact X alignment
+    remark = data.get("remark", "")
+    if remark:
+        pt_style_r = ParagraphStyle('PTI', parent=styles['Normal'], fontSize=10, fontName=CHINESE_FONT, leading=18)
+        rbd = [[Paragraph("Remark: " + remark, pt_style_r), "", "", ""]]
+        rbt = Table(rbd, colWidths=[80*mm, 32*mm, 32*mm, 36*mm])
+        rbt.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('TOPPADDING', (0,0), (-1,-1), 1),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('SPAN', (0,0), (-1,-1)),
+        ]))
+        story.append(rbt)
 
     # ===== SECTION 6: SIGNATURE BLOCK (div) =====
     dbg_marker(story, 11, "Spacers before signature")
