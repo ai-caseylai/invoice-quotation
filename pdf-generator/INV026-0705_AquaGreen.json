@@ -1,0 +1,26 @@
+{
+  "invoice_no": "INV026-0705",
+  "output_filename": "INV026-0705_AquaGreen.pdf",
+  "date": "09/07/2026",
+  "customer": "AquaGreen",
+  "attention": "Miss. Tracey Lam",
+  "tel": "3585 7138",
+  "email": "",
+  "address": "Unit A, 3/F, Evergreen Industrial Mansion, 12 Yip Fat Street, Wong Chuk Hang, Hong Kong",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
+  "items": [
+    { "no": 1, "description": "Water Level Sensor", "qty": 1, "unit_price": 3000 },
+    { "no": 2, "description": "4G Router with 1yr sim card", "qty": 1, "unit_price": 1000 },
+    { "no": 3, "description": "Greenie Real Time Data Display System Installation & Setup (Balance)", "qty": 1, "unit_price": 2000 }
+  ],
+  "subtotal": 6000,
+  "discount": 0,
+  "total": 6000,
+  "deposit": 0,
+  "deposit_label": "",
+  "remark": "Phase 2 - Final payment",
+  "payment_terms": "3rd Payment",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
+  "signature_name": "CASEY LAI"
+}

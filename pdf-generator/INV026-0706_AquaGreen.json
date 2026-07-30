@@ -1,0 +1,24 @@
+{
+  "invoice_no": "INV026-0706",
+  "output_filename": "INV026-0706_AquaGreen.pdf",
+  "date": "24/03/2026",
+  "customer": "AquaGreen",
+  "attention": "Miss. Tracey Lam",
+  "tel": "3585 7138",
+  "email": "",
+  "address": "Unit A, 3/F, Evergreen Industrial Mansion, 12 Yip Fat Street, Wong Chuk Hang, Hong Kong",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
+  "items": [
+    { "no": 1, "description": "1st Payment for Aquaponic system", "qty": 1, "unit_price": 3000 }
+  ],
+  "subtotal": 3000,
+  "discount": 0,
+  "total": 3000,
+  "deposit": 0,
+  "deposit_label": "",
+  "remark": "on site service completed",
+  "payment_terms": "1st Payment",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
+  "signature_name": "CASEY LAI"
+}

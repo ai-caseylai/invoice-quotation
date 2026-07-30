@@ -1,0 +1,24 @@
+{
+  "invoice_no": "INV026-0702",
+  "output_filename": "INV026-0702_GreatFamily.pdf",
+  "date": "07/07/2026",
+  "customer": "Great Family Limited 大家庭發展有限公司",
+  "attention": "Mr. Michael Chan",
+  "tel": "90195352",
+  "email": "",
+  "address": "Flat A, 6/F, Tong Yuen Factory Building, 505 Castle Peak Road, Cheung Sha Wan, Kln",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
+  "items": [
+    { "no": 1, "description": "數碼自動化庫存記錄系統 6月和7月的維護費", "qty": 2, "unit_price": 1000 }
+  ],
+  "subtotal": 2000,
+  "discount": 0,
+  "total": 2000,
+  "deposit": 0,
+  "deposit_label": "",
+  "remark": "",
+  "payment_terms": "COD",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
+  "signature_name": "CASEY LAI"
+}

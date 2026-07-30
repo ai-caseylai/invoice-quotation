@@ -1,0 +1,28 @@
+{
+  "invoice_no": "INV026-0005",
+  "output_filename": "INV026-0005_HomePlus.pdf",
+  "date": "28/07/2026",
+  "customer": "HOME PLUS LAUNDRY SERVICES LIMITED",
+  "attention": "Mr. DANIEL CHAN",
+  "tel": "3188-1924 / 6151-9606",
+  "email": "homepluslaundry@gmail.com",
+  "address": "Flat 18, Block A, 3/F, Wah Lok Industrial Centre, 31-41 Shan Mei Street, Fo Tan, NT, HK",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
+  "items": [
+    {"no": 1, "description": "碳粉", "qty": 1, "unit_price": 1500},
+    {"no": 2, "description": "電子磅", "qty": 1, "unit_price": 1500},
+    {"no": 3, "description": "二手手提電腦", "qty": 1, "unit_price": 2500},
+    {"no": 4, "description": "打印機", "qty": 1, "unit_price": 800},
+    {"no": 5, "description": "安裝及服務費", "qty": 1, "unit_price": 2500}
+  ],
+  "subtotal": 8800,
+  "discount": 0,
+  "total": 8800,
+  "deposit": 0,
+  "deposit_label": "",
+  "remark": "",
+  "payment_terms": "COD",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
+  "signature_name": "CASEY LAI"
+}

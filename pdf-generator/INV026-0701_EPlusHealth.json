@@ -1,0 +1,26 @@
+{
+  "invoice_no": "INV026-0701",
+  "output_filename": "INV026-0701_EPlusHealth.pdf",
+  "date": "07/07/2026",
+  "customer": "E Plus Health",
+  "attention": "Perry Wong",
+  "tel": "67622226",
+  "email": "eplusperrywong@gmail.com",
+  "address": "Flat/Rm 911, 9/F, Champion Bldg, 301 - 309 Nathan Rd, Jordan, Kln",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
+  "items": [
+    { "no": 1, "description": "Zebra Printer Out-of-warranty check", "qty": 1, "unit_price": 300 },
+    { "no": 2, "description": "AI Token", "qty": 1000, "unit_price": 1.00 },
+    { "no": 3, "description": "Small printing labels (9 rolls)", "qty": 1, "unit_price": 300 }
+  ],
+  "subtotal": 1600,
+  "discount": 0,
+  "total": 1600,
+  "deposit": 0,
+  "deposit_label": "",
+  "remark": "on site service completed",
+  "payment_terms": "Advanced payment",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
+  "signature_name": "CASEY LAI"
+}

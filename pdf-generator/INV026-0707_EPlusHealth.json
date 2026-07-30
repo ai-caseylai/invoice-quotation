@@ -1,0 +1,24 @@
+{
+  "invoice_no": "INV026-0707",
+  "output_filename": "INV026-0707_EPlusHealth.pdf",
+  "date": "28/07/2026",
+  "customer": "E Plus Health",
+  "attention": "Perry Wong",
+  "tel": "67622226",
+  "email": "eplusperrywong@gmail.com",
+  "address": "Flat/Rm 911, 9/F, Champion Bldg, 301 - 309 Nathan Rd, Jordan, Kln",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
+  "items": [
+    { "no": 1, "description": "Zebra Label Printer", "qty": 1, "unit_price": 2200 }
+  ],
+  "subtotal": 2200,
+  "discount": 0,
+  "total": 2200,
+  "deposit": 0,
+  "deposit_label": "",
+  "remark": "",
+  "payment_terms": "Advanced payment",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
+  "signature_name": "CASEY LAI"
+}

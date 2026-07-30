@@ -1,0 +1,29 @@
+{
+  "invoice_no": "INV026-0703",
+  "output_filename": "INV026-0703_AquaGreen.pdf",
+  "date": "07/07/2026",
+  "customer": "AquaGreen",
+  "attention": "Miss. Tracey Lam",
+  "tel": "3585 7138",
+  "email": "",
+  "address": "Unit A, 3/F, Evergreen Industrial Mansion, 12 Yip Fat Street, Wong Chuk Hang, Hong Kong",
+  "logo": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/logo2-removebg-preview.png",
+  "items": [
+    {
+      "no": 1,
+      "description": "數碼自動化庫存記錄系統 6月和7月的維護費",
+      "qty": 2,
+      "unit_price": 1000
+    }
+  ],
+  "subtotal": 2000,
+  "discount": 0,
+  "total": 2000,
+  "deposit": 0,
+  "deposit_label": "",
+  "remark": "on site service completed",
+  "payment_terms": "COD",
+  "chop": "musleabs eng chop.png",
+  "signature": "/Users/perry/Documents/invoice-and-quotation/pdf-generator/signiture.png",
+  "signature_name": "CASEY LAI"
+}
